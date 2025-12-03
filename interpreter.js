@@ -3,6 +3,23 @@
  * ====================================
  */
 
+// Пользовательские классы ошибок
+class RobotSyntaxError extends Error {
+    constructor(message, line = null) {
+        super(message);
+        this.name = 'RobotSyntaxError';
+        this.line = line;
+    }
+}
+
+class RobotRuntimeError extends Error {
+    constructor(message, line = null) {
+        super(message);
+        this.name = 'RobotRuntimeError';
+        this.line = line;
+    }
+}
+
 class Interpreter {
     constructor(robot, renderer) {
         this.robot = robot;
@@ -36,7 +53,23 @@ class Interpreter {
         }
     }
 
-    // Ошибка
+    // Синтаксическая ошибка "НЕ ПОНИМАЮ"
+    syntaxError(message, line = null) {
+        const lineInfo = line !== null ? ` (строка ${line + 1})` : '';
+        if (this.onError) {
+            this.onError(`❌ НЕ ПОНИМАЮ: ${message}${lineInfo}`);
+        }
+    }
+
+    // Ошибка выполнения "НЕ МОГУ"
+    runtimeError(message, line = null) {
+        const lineInfo = line !== null ? ` (строка ${line + 1})` : '';
+        if (this.onError) {
+            this.onError(`🚫 НЕ МОГУ: ${message}${lineInfo}`);
+        }
+    }
+
+    // Общая ошибка (для совместимости)
     error(message, line = null) {
         const lineInfo = line !== null ? ` (строка ${line + 1})` : '';
         if (this.onError) {
@@ -88,6 +121,12 @@ class Interpreter {
             while (pos < tokens.length) {
                 const token = tokens[pos];
 
+                // Пропускаем точки с запятой
+                if (token.value === ';') {
+                    pos++;
+                    continue;
+                }
+
                 if (token.value === '}') {
                     break;
                 }
@@ -101,33 +140,28 @@ class Interpreter {
             return statements;
         };
 
-        // Парсинг опционального числа в скобках: (n) или просто n
-        const parseOptionalNumber = () => {
-            if (pos >= tokens.length) return 1;
-
+        // Парсинг обязательного числа в скобках: (n)
+        const parseRequiredNumber = (commandName, line) => {
             // Проверяем на открывающую скобку
-            if (tokens[pos].value === '(') {
-                pos++;
-                if (pos >= tokens.length || isNaN(parseInt(tokens[pos].value))) {
-                    return 1;
-                }
-                const num = parseInt(tokens[pos].value);
-                pos++;
-                // Пропускаем закрывающую скобку
-                if (pos < tokens.length && tokens[pos].value === ')') {
-                    pos++;
-                }
-                return num;
+            if (pos >= tokens.length || tokens[pos].value !== '(') {
+                throw new RobotSyntaxError(`после "${commandName}" ожидались скобки с числом, например: ${commandName}(3)`, line);
             }
+            pos++; // пропускаем (
 
-            // Проверяем на число без скобок
-            if (!isNaN(parseInt(tokens[pos].value))) {
-                const num = parseInt(tokens[pos].value);
-                pos++;
-                return num;
+            // Проверяем число
+            if (pos >= tokens.length || isNaN(parseInt(tokens[pos].value))) {
+                throw new RobotSyntaxError(`внутри скобок "${commandName}(...)" ожидалось число`, line);
             }
+            const num = parseInt(tokens[pos].value);
+            pos++;
 
-            return 1; // По умолчанию 1 шаг
+            // Проверяем закрывающую скобку
+            if (pos >= tokens.length || tokens[pos].value !== ')') {
+                throw new RobotSyntaxError(`ожидалась закрывающая скобка после "${commandName}(${num}"`, line);
+            }
+            pos++; // пропускаем )
+
+            return num;
         };
 
         const parseStatement = () => {
@@ -135,16 +169,16 @@ class Interpreter {
 
             const token = tokens[pos];
 
-            // Команды движения с параметром: вперед(n), назад(n)
+            // Команды движения с обязательным параметром: вперед(n), назад(n)
             if (['вперёд', 'вперед', 'forward'].includes(token.value)) {
                 pos++;
-                const count = parseOptionalNumber();
+                const count = parseRequiredNumber('вперед', token.line);
                 return { type: 'forward', count, line: token.line };
             }
 
             if (['назад', 'backward', 'back'].includes(token.value)) {
                 pos++;
-                const count = parseOptionalNumber();
+                const count = parseRequiredNumber('назад', token.line);
                 return { type: 'backward', count, line: token.line };
             }
 
@@ -176,7 +210,7 @@ class Interpreter {
 
                 // Число повторений
                 if (pos >= tokens.length || isNaN(parseInt(tokens[pos].value))) {
-                    throw new SyntaxError(`Ожидалось число после "повтори" (строка ${token.line + 1})`);
+                    throw new RobotSyntaxError(`Ожидалось число после "повтори" (строка ${token.line + 1})`);
                 }
                 const count = parseInt(tokens[pos].value);
                 pos++;
@@ -188,7 +222,7 @@ class Interpreter {
 
                 // Ожидаем {
                 if (pos >= tokens.length || tokens[pos].value !== '{') {
-                    throw new SyntaxError(`Ожидалась '{' после "повтори ${count}" (строка ${token.line + 1})`);
+                    throw new RobotSyntaxError(`Ожидалась '{' после "повтори ${count}" (строка ${token.line + 1})`);
                 }
                 pos++;
 
@@ -196,7 +230,7 @@ class Interpreter {
 
                 // Ожидаем }
                 if (pos >= tokens.length || tokens[pos].value !== '}') {
-                    throw new SyntaxError(`Ожидалась '}' для закрытия цикла (строка ${token.line + 1})`);
+                    throw new RobotSyntaxError(`Ожидалась '}' для закрытия цикла (строка ${token.line + 1})`);
                 }
                 pos++;
 
@@ -211,7 +245,7 @@ class Interpreter {
 
                 // Ожидаем {
                 if (pos >= tokens.length || tokens[pos].value !== '{') {
-                    throw new SyntaxError(`Ожидалась '{' после условия (строка ${token.line + 1})`);
+                    throw new RobotSyntaxError(`Ожидалась '{' после условия (строка ${token.line + 1})`);
                 }
                 pos++;
 
@@ -219,7 +253,7 @@ class Interpreter {
 
                 // Ожидаем }
                 if (pos >= tokens.length || tokens[pos].value !== '}') {
-                    throw new SyntaxError(`Ожидалась '}' для закрытия цикла "пока" (строка ${token.line + 1})`);
+                    throw new RobotSyntaxError(`Ожидалась '}' для закрытия цикла "пока" (строка ${token.line + 1})`);
                 }
                 pos++;
 
@@ -234,7 +268,7 @@ class Interpreter {
 
                 // Ожидаем {
                 if (pos >= tokens.length || tokens[pos].value !== '{') {
-                    throw new SyntaxError(`Ожидалась '{' после условия (строка ${token.line + 1})`);
+                    throw new RobotSyntaxError(`Ожидалась '{' после условия (строка ${token.line + 1})`);
                 }
                 pos++;
 
@@ -242,7 +276,7 @@ class Interpreter {
 
                 // Ожидаем }
                 if (pos >= tokens.length || tokens[pos].value !== '}') {
-                    throw new SyntaxError(`Ожидалась '}' для закрытия блока "если" (строка ${token.line + 1})`);
+                    throw new RobotSyntaxError(`Ожидалась '}' для закрытия блока "если" (строка ${token.line + 1})`);
                 }
                 pos++;
 
@@ -253,14 +287,14 @@ class Interpreter {
                     pos++;
 
                     if (pos >= tokens.length || tokens[pos].value !== '{') {
-                        throw new SyntaxError(`Ожидалась '{' после "иначе" (строка ${tokens[pos-1].line + 1})`);
+                        throw new RobotSyntaxError(`Ожидалась '{' после "иначе" (строка ${tokens[pos-1].line + 1})`);
                     }
                     pos++;
 
                     elseBody = parseBlock();
 
                     if (pos >= tokens.length || tokens[pos].value !== '}') {
-                        throw new SyntaxError(`Ожидалась '}' для закрытия блока "иначе"`);
+                        throw new RobotSyntaxError(`Ожидалась '}' для закрытия блока "иначе"`);
                     }
                     pos++;
                 }
@@ -268,14 +302,13 @@ class Interpreter {
                 return { type: 'if', condition, thenBody, elseBody, line: token.line };
             }
 
-            // Неизвестная команда - пропускаем
-            pos++;
-            return null;
+            // Неизвестная команда - ошибка "НЕ ПОНИМАЮ"
+            throw new RobotSyntaxError(`неизвестная команда "${token.original}"`, token.line);
         };
 
         const parseCondition = () => {
             if (pos >= tokens.length) {
-                throw new SyntaxError('Ожидалось условие');
+                throw new RobotSyntaxError('Ожидалось условие');
             }
 
             const token = tokens[pos];
@@ -286,7 +319,7 @@ class Interpreter {
                 negate = true;
                 pos++;
                 if (pos >= tokens.length) {
-                    throw new SyntaxError('Ожидалось условие после "не"');
+                    throw new RobotSyntaxError('Ожидалось условие после "не"');
                 }
             }
 
@@ -328,13 +361,39 @@ class Interpreter {
             const condName = conditions[condToken.value];
 
             if (!condName) {
-                throw new SyntaxError(`Неизвестное условие: "${condToken.original}" (строка ${condToken.line + 1})`);
+                throw new RobotSyntaxError(`Неизвестное условие: "${condToken.original}" (строка ${condToken.line + 1})`);
             }
 
             return { type: condName, negate, line: condToken.line };
         };
 
-        return parseBlock();
+        // Проверяем, что программа имеет имя и фигурные скобки
+        if (tokens.length === 0) {
+            throw new RobotSyntaxError('программа пуста');
+        }
+
+        // Первый токен должен быть именем программы
+        const firstToken = tokens[pos];
+
+        // Проверяем, есть ли структура: ИмяПрограммы { ... }
+        if (pos + 1 < tokens.length && tokens[pos + 1].value === '{') {
+            // Это именованная программа
+            const programName = firstToken.original;
+            pos++; // пропускаем имя
+            pos++; // пропускаем {
+
+            const body = parseBlock();
+
+            // Проверяем закрывающую скобку
+            if (pos >= tokens.length || tokens[pos].value !== '}') {
+                throw new RobotSyntaxError(`ожидалась '}' в конце программы "${programName}"`);
+            }
+
+            return body;
+        }
+
+        // Если нет структуры с именем — ошибка
+        throw new RobotSyntaxError('программа должна иметь имя и быть в фигурных скобках, например: МояПрограмма { ... }');
     }
 
     // Выполнение условия
@@ -398,8 +457,9 @@ class Interpreter {
         }
 
         try {
-            // Сохраняем начальную позицию
-            this.robot.saveStartPosition();
+            // Сбрасываем робота в начальную позицию перед выполнением
+            this.robot.reset();
+            this.renderer.render();
 
             // Токенизация и парсинг
             this.log('Компиляция программы...', 'info');
@@ -412,19 +472,37 @@ class Interpreter {
             await this.executeStatements(ast);
 
             if (!this.shouldStop) {
-                this.log('Программа успешно завершена!', 'success');
+                // Проверяем результат выполнения
+                const allPlanted = this.robot.field.allTargetsPainted();
+                const onBase = this.robot.isOnBase();
 
-                if (this.robot.isOnTarget()) {
-                    this.log('🎉 Робот достиг цели!', 'success');
-                }
-
-                if (this.onComplete) {
-                    this.onComplete(true);
+                if (!onBase) {
+                    this.log('⚠️ Программа завершена, но робот не вернулся на базу!', 'warning');
+                    if (this.onComplete) {
+                        this.onComplete(false);
+                    }
+                } else if (!allPlanted) {
+                    this.log('⚠️ Робот на базе, но не все грядки засажены!', 'warning');
+                    if (this.onComplete) {
+                        this.onComplete(false);
+                    }
+                } else {
+                    this.log('🎉 Программа успешно завершена!', 'success');
+                    this.log('✅ Все грядки засажены и робот вернулся на базу!', 'success');
+                    if (this.onComplete) {
+                        this.onComplete(true);
+                    }
                 }
             }
 
         } catch (e) {
-            this.error(e.message);
+            if (e instanceof RobotSyntaxError) {
+                this.syntaxError(e.message);
+            } else if (e instanceof RobotRuntimeError) {
+                this.runtimeError(e.message);
+            } else {
+                this.error(e.message);
+            }
             if (this.onComplete) {
                 this.onComplete(false);
             }
@@ -513,7 +591,7 @@ class Interpreter {
                 await this.renderer.animateMove(oldX, oldY, this.robot.x, this.robot.y, this.getDelay());
                 this.renderer.render();
             } else {
-                throw new Error(result.error);
+                throw new RobotRuntimeError('впереди препятствие (стена или клумба)');
             }
 
             await this.delay(50);
@@ -536,7 +614,7 @@ class Interpreter {
                 await this.renderer.animateMove(oldX, oldY, this.robot.x, this.robot.y, this.getDelay());
                 this.renderer.render();
             } else {
-                throw new Error(result.error);
+                throw new RobotRuntimeError('сзади препятствие (стена или клумба)');
             }
 
             await this.delay(50);
@@ -585,6 +663,16 @@ class Interpreter {
     // Команда посадить
     async executePaint() {
         this.log('🌸 посади', 'command');
+
+        // Проверяем, что робот на грядке
+        if (!this.robot.isOnTarget()) {
+            throw new RobotRuntimeError('здесь нет грядки');
+        }
+
+        // Проверяем, что грядка ещё не засажена
+        if (this.robot.isCellPainted()) {
+            throw new RobotRuntimeError('здесь уже посажены цветы');
+        }
 
         this.robot.paint();
         this.renderer.render();
@@ -643,15 +731,24 @@ class Interpreter {
         if (!this.stepState) {
             try {
                 const tokens = this.tokenize(code);
+                // Сбрасываем робота в начальную позицию
+                this.robot.reset();
+                this.renderer.render();
+
                 this.stepState = {
                     ast: this.parse(tokens),
                     index: 0,
                     stack: []
                 };
-                this.robot.saveStartPosition();
                 this.log('Начало пошагового выполнения', 'info');
             } catch (e) {
-                this.error(e.message);
+                if (e instanceof RobotSyntaxError) {
+                    this.syntaxError(e.message);
+                } else if (e instanceof RobotRuntimeError) {
+                    this.runtimeError(e.message);
+                } else {
+                    this.error(e.message);
+                }
                 return false;
             }
         }
@@ -683,19 +780,35 @@ class Interpreter {
                     context.iteration++;
                     context.index = 0;
                     stack.push(context);
+                    this.log(`🔄 повтори: итерация ${context.iteration + 1}/${context.count}`, 'info');
                     return true;
                 } else if (context.type === 'while') {
-                    if (this.evaluateCondition(context.condition)) {
+                    const condResult = this.evaluateCondition(context.condition);
+                    this.log(`🔄 пока ... → ${condResult ? 'продолжаем' : 'выход'}`, 'info');
+                    if (condResult) {
                         context.index = 0;
                         stack.push(context);
                         return true;
                     }
                 }
 
+                // Выходим из блока
                 return true;
             }
 
-            this.log('Программа завершена', 'success');
+            // Проверяем результат выполнения
+            const allPlanted = this.robot.field.allTargetsPainted();
+            const onBase = this.robot.isOnBase();
+
+            if (!onBase) {
+                this.log('⚠️ Программа завершена, но робот не вернулся на базу!', 'warning');
+            } else if (!allPlanted) {
+                this.log('⚠️ Робот на базе, но не все грядки засажены!', 'warning');
+            } else {
+                this.log('🎉 Программа успешно завершена!', 'success');
+                this.log('✅ Все грядки засажены и робот вернулся на базу!', 'success');
+            }
+
             this.stepState = null;
             return false;
         }
@@ -703,7 +816,18 @@ class Interpreter {
         const stmt = currentStatements[currentIndex];
 
         try {
+            // Увеличиваем индекс в текущем контексте
+            const incrementIndex = () => {
+                if (stack.length === 0) {
+                    this.stepState.index++;
+                } else {
+                    stack[stack.length - 1].index++;
+                }
+            };
+
             if (stmt.type === 'repeat') {
+                this.log(`🔄 повтори ${stmt.count} раз: начало`, 'info');
+                incrementIndex();
                 stack.push({
                     type: 'repeat',
                     statements: stmt.body,
@@ -711,13 +835,11 @@ class Interpreter {
                     iteration: 0,
                     index: 0
                 });
-                if (stack.length === 1) {
-                    this.stepState.index++;
-                } else {
-                    stack[stack.length - 2].index++;
-                }
             } else if (stmt.type === 'while') {
-                if (this.evaluateCondition(stmt.condition)) {
+                const condResult = this.evaluateCondition(stmt.condition);
+                this.log(`🔄 пока ... → ${condResult ? 'истина' : 'ложь'}`, 'info');
+                incrementIndex();
+                if (condResult) {
                     stack.push({
                         type: 'while',
                         statements: stmt.body,
@@ -725,13 +847,11 @@ class Interpreter {
                         index: 0
                     });
                 }
-                if (stack.length === 1) {
-                    this.stepState.index++;
-                } else {
-                    stack[stack.length - 2].index++;
-                }
             } else if (stmt.type === 'if') {
-                if (this.evaluateCondition(stmt.condition)) {
+                const condResult = this.evaluateCondition(stmt.condition);
+                this.log(`❓ если ... → ${condResult ? 'истина' : 'ложь'}`, 'info');
+                incrementIndex();
+                if (condResult) {
                     stack.push({
                         type: 'if',
                         statements: stmt.thenBody,
@@ -744,22 +864,19 @@ class Interpreter {
                         index: 0
                     });
                 }
-                if (stack.length === 1) {
-                    this.stepState.index++;
-                } else {
-                    stack[stack.length - 2].index++;
-                }
             } else {
+                // Выполняем реальную команду
                 await this.executeStatement(stmt);
-
-                if (stack.length === 0) {
-                    this.stepState.index++;
-                } else {
-                    stack[stack.length - 1].index++;
-                }
+                incrementIndex();
             }
         } catch (e) {
-            this.error(e.message, stmt.line);
+            if (e instanceof RobotSyntaxError) {
+                this.syntaxError(e.message);
+            } else if (e instanceof RobotRuntimeError) {
+                this.runtimeError(e.message);
+            } else {
+                this.error(e.message);
+            }
             this.stepState = null;
             return false;
         }
@@ -790,4 +907,6 @@ class Interpreter {
 }
 
 // Экспорт
+window.RobotSyntaxError = RobotSyntaxError;
+window.RobotRuntimeError = RobotRuntimeError;
 window.Interpreter = Interpreter;

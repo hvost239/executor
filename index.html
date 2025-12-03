@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Исполнители — Среда разработки</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="header">
+            <div class="logo">
+                <div class="logo-icon">🤖</div>
+                <h1>Исполнители</h1>
+            </div>
+            <nav class="nav-controls">
+                <button class="btn btn-primary" id="runBtn" title="Выполнить программу (F5)">
+                    <span class="icon">▶</span>
+                    Выполнить
+                </button>
+                <button class="btn btn-secondary" id="stepBtn" title="Шаг (F10)">
+                    <span class="icon">⏭</span>
+                    Шаг
+                </button>
+                <button class="btn btn-warning" id="stopBtn" title="Остановить (Esc)">
+                    <span class="icon">⏹</span>
+                    Стоп
+                </button>
+                <button class="btn btn-ghost" id="resetBtn" title="Сбросить (Ctrl+R)">
+                    <span class="icon">↺</span>
+                    Сброс
+                </button>
+                <div class="speed-control">
+                    <label>Скорость:</label>
+                    <input type="range" id="speedSlider" min="1" max="10" value="5">
+                    <span id="speedValue">5</span>
+                </div>
+            </nav>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Code Editor Panel -->
+            <section class="panel editor-panel">
+                <div class="panel-header">
+                    <h2>📝 Редактор кода</h2>
+                    <div class="panel-actions">
+                        <button class="btn-icon" id="clearCodeBtn" title="Очистить код">🗑️</button>
+                        <button class="btn-icon" id="loadExampleBtn" title="Загрузить пример">📂</button>
+                    </div>
+                </div>
+                <div class="editor-container">
+                    <div class="line-numbers" id="lineNumbers"></div>
+                    <textarea id="codeEditor" spellcheck="false" placeholder="// СКИ Робота-садовника:
+
+// направо      — повернуться на 90° вправо
+// налево       — повернуться на 90° влево
+// кругом       — развернуться на 180°
+// вперед(n)    — проехать n клеток вперёд
+// назад(n)     — проехать n клеток назад
+// посади       — посадить цветы на грядке
+
+// Циклы и условия:
+// повтори N раз { ... }
+// пока свободно_впереди { ... }
+// если на_грядке { посади }
+"></textarea>
+                </div>
+            </section>
+
+            <!-- Robot Field Panel -->
+            <section class="panel field-panel">
+                <div class="panel-header">
+                    <h2>🎮 Поле Робота</h2>
+                    <div class="panel-actions">
+                        <button class="btn-icon" id="loadMazeBtn" title="Загрузить лабиринт">📥</button>
+                        <select id="fieldSize">
+                            <option value="5">5×5</option>
+                            <option value="6">6×6</option>
+                            <option value="7">7×7</option>
+                            <option value="8" selected>8×8</option>
+                            <option value="10">10×10</option>
+                            <option value="11">11×11</option>
+                            <option value="12">12×12</option>
+                            <option value="15">15×15</option>
+                        </select>
+                        <button class="btn-icon" id="editFieldBtn" title="Редактировать поле">✏️</button>
+                        <input type="file" id="mazeFileInput" accept=".maz,.txt" style="display: none;">
+                    </div>
+                </div>
+                <div class="field-container">
+                    <canvas id="robotCanvas"></canvas>
+                </div>
+                <div class="robot-status">
+                    <span class="status-item">📍 Позиция: <strong id="robotPosition">(1, 1)</strong></span>
+                    <span class="status-item">🧭 Направление: <strong id="robotDirection">Вправо</strong></span>
+                    <span class="status-item" id="statusMessage">Готов к работе</span>
+                </div>
+            </section>
+        </main>
+
+        <!-- Console Panel -->
+        <section class="console-panel">
+            <div class="panel-header">
+                <h2>📋 Консоль</h2>
+                <button class="btn-icon" id="clearConsoleBtn" title="Очистить консоль">🗑️</button>
+            </div>
+            <div class="console-output" id="consoleOutput">
+                <div class="console-message info">🚗 Робот-садовник готов к работе!</div>
+                <div class="console-message hint">Задача: посадить цветы на всех грядках и вернуться на базу.</div>
+            </div>
+        </section>
+
+        <!-- Examples Modal -->
+        <div class="modal" id="examplesModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>📚 Примеры программ</h3>
+                    <button class="btn-close" id="closeModalBtn">×</button>
+                </div>
+                <div class="modal-body">
+                    <div class="example-card" data-example="square">
+                        <h4>🌸 Квадрат</h4>
+                        <p>Посадить цветы квадратом 3×3</p>
+                    </div>
+                    <div class="example-card" data-example="allGardens">
+                        <h4>🌻 Все грядки</h4>
+                        <p>Засадить все грядки и вернуться</p>
+                    </div>
+                    <div class="example-card" data-example="line">
+                        <h4>🌷 Ряд</h4>
+                        <p>Засадить ряд грядок</p>
+                    </div>
+                    <div class="example-card" data-example="maze">
+                        <h4>🏁 К базе</h4>
+                        <p>Найти путь к базе</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+        <!-- Field Editor Modal -->
+        <div class="modal" id="fieldEditorModal">
+            <div class="modal-content modal-large">
+                <div class="modal-header">
+                    <h3>✏️ Редактор поля</h3>
+                    <button class="btn-close" id="closeFieldEditorBtn">×</button>
+                </div>
+                <div class="modal-body">
+                    <div class="editor-tools">
+                        <button class="tool-btn active" data-tool="wall" title="Стена">🧱</button>
+                        <button class="tool-btn" data-tool="robot" title="Робот">🤖</button>
+                        <button class="tool-btn" data-tool="target" title="Цель">🎯</button>
+                        <button class="tool-btn" data-tool="erase" title="Ластик">🧹</button>
+                    </div>
+                    <canvas id="fieldEditorCanvas"></canvas>
+                    <div class="editor-actions">
+                        <button class="btn btn-secondary" id="clearFieldBtn">Очистить поле</button>
+                        <button class="btn btn-primary" id="applyFieldBtn">Применить</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="robot.js"></script>
+    <script src="interpreter.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>

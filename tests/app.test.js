@@ -63,37 +63,39 @@ test('offline bundle initializes through the actual HTML and runs through the Ru
         await f.close();
     }
 });
-test('root index.html initializes and loads a maze through the file input', async () => {
-    const f = await openApp('../index.html');
-    try {
-        assert.ok(f.app);
-        const input = f.app.elements.mazeFileInput;
-        let pickerClicks = 0;
-        input.addEventListener('click', () => pickerClicks++);
-        f.app.elements.loadMazeBtn.click();
-        assert.equal(pickerClicks, 1);
+for (const entry of ['../index.html', '../dist/index.html']) {
+    test(`${entry} initializes and loads a maze through the file input`, async () => {
+        const f = await openApp(entry);
+        try {
+            assert.ok(f.app);
+            const input = f.app.elements.mazeFileInput;
+            let pickerClicks = 0;
+            input.addEventListener('click', () => pickerClicks++);
+            f.app.elements.loadMazeBtn.click();
+            assert.equal(pickerClicks, 1);
 
-        const file = new f.window.File(['...\r\n.B.\r\n.w.\r\n'], 'sample.maz');
-        for (let attempt = 0; attempt < 2; attempt++) {
-            const previousField = f.app.field;
-            const selection = new f.window.DataTransfer();
-            selection.items.add(file);
-            input.files = selection.files;
-            input.dispatchEvent(new f.window.Event('change', { bubbles: true }));
-            await f.window.happyDOM.waitUntilComplete();
-            assert.notEqual(f.app.field, previousField);
-            assert.equal(f.app.field.size, 3);
-            assert.equal(f.app.field.isWall(1, 2), true);
-            assert.equal(f.app.robot.isOnBase(), true);
-            assert.equal(f.app.robot.field, f.app.field);
-            assert.equal(f.app.renderer.field, f.app.field);
-            assert.match(f.app.elements.consoleOutput.textContent, /sample\.maz.*загружен/);
-            assert.equal(input.value, ''); // The same file can be selected again.
+            const file = new f.window.File(['...\r\n.B.\r\n.w.\r\n'], 'sample.maz');
+            for (let attempt = 0; attempt < 2; attempt++) {
+                const previousField = f.app.field;
+                const selection = new f.window.DataTransfer();
+                selection.items.add(file);
+                input.files = selection.files;
+                input.dispatchEvent(new f.window.Event('change', { bubbles: true }));
+                await f.window.happyDOM.waitUntilComplete();
+                assert.notEqual(f.app.field, previousField);
+                assert.equal(f.app.field.size, 3);
+                assert.equal(f.app.field.isWall(1, 2), true);
+                assert.equal(f.app.robot.isOnBase(), true);
+                assert.equal(f.app.robot.field, f.app.field);
+                assert.equal(f.app.renderer.field, f.app.field);
+                assert.match(f.app.elements.consoleOutput.textContent, /sample\.maz.*загружен/);
+                assert.equal(input.value, ''); // The same file can be selected again.
+            }
+        } finally {
+            await f.close();
         }
-    } finally {
-        await f.close();
-    }
-});
+    });
+}
 test('console input submits a value, preserves output fragments and cancels on Stop', async () => {
     const f = await openApp();
     try {

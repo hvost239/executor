@@ -25,6 +25,19 @@ npm run format:check
 `index.html` внутри неё. Зависимости фиксируются в `package-lock.json`; CDN во время
 работы нет.
 
+## Публикация на GitHub Pages
+
+В настройках репозитория **Settings → Pages → Build and deployment → Source**
+выберите **GitHub Actions**. Workflow `.github/workflows/pages.yml` при обновлении
+`main` устанавливает зависимости, проверяет форматирование, собирает приложение,
+запускает тесты и публикует содержимое `dist`. В pull request выполняются проверки
+без публикации. Повторный деплой можно запустить через **Actions → Build and deploy
+GitHub Pages → Run workflow** для ветки `main`.
+
+Публикация исходников через **Deploy from a branch → main / (root)** не подходит:
+`dist` создаётся при сборке и не хранится в Git. Без сборки запрос `dist/bundle.js`
+возвращает `404`, и обработчики кнопок не запускаются.
+
 ## Архитектура
 
 ```text

@@ -1,0 +1,105 @@
+(* «Исполнители»: canonical grammar, implemented by Chevrotain in grammar.js.
+   Keyword alternatives are case-insensitive. User identifiers keep their case.
+   Source: robot.chm in https://kpolyakov.spb.ru/download/robowin.zip.
+   Additional spellings observed in official examples: печать and <>.
+   Compatibility extensions: optional semicolons, unparenthesized conditions,
+   повтори N раз, and the previous project's Robot command aliases. *)
+
+program           = topLevel, { topLevel }, EOF ;
+topLevel          = [ typeSpecifier ], identifier, ( procedureTail | declarationTail ) ;
+typeSpecifier     = type, { "[", "]" } ;
+procedureTail     = [ "(", [ parameter, { ",", parameter } ], ")" ], block ;
+parameter         = type, identifier, { "[", "]" } ;
+declaration       = type, identifier, declarationTail ;
+declarationTail   = declarator, { ",", identifier, declarator }, [ ";" ] ;
+declarator        = { "[", expression, "]" }, [ assignment, expression ] ;
+block             = "{", { statement }, "}" ;
+
+statement         = block | declaration | ifStatement | whileStatement
+                  | repeatStatement | forStatement | flowStatement
+                  | returnStatement | outputStatement | inputStatement
+                  | simpleStatement, [ ";" ] | ";" ;
+ifStatement       = IF, expression, statement, [ ELSE, statement ] ;
+whileStatement    = WHILE, expression, statement ;
+repeatStatement   = REPEAT, expression, [ TIMES ], statement ;
+forStatement      = FOR, "(", [ simpleStatement ], ";", [ expression ], ";",
+                    [ simpleStatement ], ")", statement ;
+flowStatement     = ( BREAK | CONTINUE ), [ ";" ] ;
+returnStatement   = RETURN, [ expression ], [ ";" ] ;
+simpleStatement   = expression, [ assignment, expression ] ;
+assignment        = "=" | ":=" ;
+outputStatement   = ( ( PRINT | PRINTLN ), [ outputItem, { ",", outputItem } ]
+                    | ( COUT | COUTLN ), { "<<", outputItem } ), [ ";" ] ;
+outputItem        = expression, [ ":", expression, [ ":", expression ] ] ;
+inputStatement    = ( INPUT, reference, { ",", reference }
+                    | CIN, ">>", reference, { ">>", reference } ), [ ";" ] ;
+reference         = identifier, { "[", expression, "]" } ;
+
+expression        = orExpression ;
+orExpression      = andExpression, { OR, andExpression } ;
+andExpression     = compareExpression, { AND, compareExpression } ;
+compareExpression = addExpression, { comparison, addExpression } ;
+addExpression     = multiplyExpression, { ( "+" | "-" ), multiplyExpression } ;
+multiplyExpression = unaryExpression, { ( "*" | "/" | "%" ), unaryExpression } ;
+unaryExpression   = ( "+" | "-" ), unaryExpression | NOT, multiplyExpression | powerExpression ;
+powerExpression   = atom, [ "^", unaryExpression ] ;
+atom              = ( number | string | TRUE | FALSE | "(", expression, ")"
+                    | identifier, [ "(", [ expression, { ",", expression } ], ")" ] ),
+                    { "[", expression, "]" } ;
+comparison        = "==" | "!=" | "<>" | "<" | "<=" | ">" | ">=" ;
+
+(* Left associativity except exponentiation. NOT has lower precedence than
+   multiplication and higher precedence than addition, as in robot.chm.
+   ELSE binds to the closest unmatched IF. Normal documented control forms
+   use parentheses, e.g. REPEAT (expression), IF (expression), WHILE (expression). *)
+
+type     = "int" | "целые" | "float" | "дробные"
+         | "char" | "символы" | "logical" | "логические" ;
+REPEAT   = "repeat" | "повтори" | "повторить" ;
+WHILE    = "while" | "пока" ;
+FOR      = "for" | "цикл" ;
+IF       = "if" | "если" ;
+ELSE     = "else" | "иначе" ;
+BREAK    = "break" | "прервать" ;
+CONTINUE = "continue" | "продолжить" ;
+RETURN   = "return" | "возврат" ;
+INPUT    = "input" | "ввод" ;
+PRINT    = "print" | "вывод" | "печать" ;
+PRINTLN  = "println" | "выводстр" ;
+CIN      = "cin" ;
+COUT     = "cout" ;
+COUTLN   = "coutln" ;
+TRUE     = "true" | "истина" ;
+FALSE    = "false" | "ложь" ;
+NOT      = "!" | "not" | "не" ;
+AND      = "&" | "and" | "и" ;
+OR       = "|" | "or" | "или" ;
+TIMES    = "раз" | "раза" | "times" ;
+
+(* Lexical rules; whitespace and comments are skipped outside strings. *)
+identifier = letter, { letter | digit | "_" } ;
+letter     = "A" … "Z" | "a" … "z" | "А" … "Я" | "а" … "я" | "Ё" | "ё" ;
+digit      = "0" … "9" ;
+number     = ( digit, { digit }, [ ".", { digit } ] | ".", digit, { digit } ),
+             [ ( "e" | "E" ), [ "+" | "-" ], digit, { digit } ] ;
+string     = '"', { ? any character except double quote, CR and LF ? }, '"'
+           | "'", { ? any character except single quote, CR and LF ? }, "'" ;
+comment    = "//", { ? any character except CR and LF ? }
+           | "/*", { ? any character until the first closing delimiter ? }, "*/" ;
+
+(* Backslash is literal, not an escape character: original examples use "\".
+   Semantic constraints (analyzer.js):
+   - globals precede all procedures; the first procedure is the entry point;
+   - the entry point has no parameters or return type;
+   - identifiers contain at most 32 characters and must be unique in their scope;
+   - functions return a scalar type or char[]; arrays have at most two dimensions;
+   - assignment/input require writable references; a command statement is a call;
+   - break/continue only occur inside loops; returns match the procedure type;
+   - unused procedures are checked too; forward and recursive calls are permitted.
+   Runtime constraints (runtime/):
+   - arrays contain 1..10000 elements, indices start at zero;
+   - parameters, including arrays and matrices, are passed by value;
+   - char[] strings end at the first zero character or at array capacity;
+   - integer division truncates towards zero; real division keeps its fraction;
+   - AND/OR short-circuit; repeat count is evaluated once upon entering the loop.
+*)

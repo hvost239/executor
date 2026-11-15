@@ -1,3 +1,8 @@
+import { Field, Robot, FieldRenderer } from './robot.js';
+import { Interpreter } from './interpreter.js';
+import { parseMaze } from './maze.js';
+import { ProgramConsole } from './ui/program-console.js';
+
 /**
  * Исполнители — Главный модуль приложения
  * =========================================
@@ -55,9 +60,6 @@ class App {
             fieldEditorCanvas: document.getElementById('fieldEditorCanvas'),
             clearFieldBtn: document.getElementById('clearFieldBtn'),
             applyFieldBtn: document.getElementById('applyFieldBtn'),
-
-            // Загрузка лабиринтов
-            mazeFileInput: document.getElementById('mazeFileInput')
         };
 
         // Состояние
@@ -68,7 +70,7 @@ class App {
         this.examples = {
             square: `Квадрат
 {
-    повтори 4 раз {
+    повтори (4) {
         посади;
         вперед(2);
         направо;
@@ -76,11 +78,11 @@ class App {
 }`,
             allGardens: `ВсеГрядки
 {
-    пока не на_базе {
-        если на_грядке {
+    пока (не база) {
+        если (грядка) {
             посади;
         }
-        если свободно_впереди {
+        если (впереди_свободно) {
             вперед(1);
         } иначе {
             направо;
@@ -89,34 +91,35 @@ class App {
 }`,
             line: `РядГрядок
 {
-    пока свободно_впереди {
-        если на_грядке {
+    пока (впереди_свободно) {
+        если (грядка) {
             посади;
         }
         вперед(1);
     }
-    если на_грядке {
+    если (грядка) {
         посади;
     }
     кругом;
 }`,
             maze: `КБазе
 {
-    пока не на_базе {
-        если свободно_справа {
+    пока (не база) {
+        если (справа_свободно) {
             направо;
             вперед(1);
         } иначе {
-            если свободно_впереди {
+            если (впереди_свободно) {
                 вперед(1);
             } иначе {
                 налево;
             }
         }
     }
-}`
+}`,
         };
 
+        this.programConsole = new ProgramConsole(this.elements.consoleOutput);
         this.init();
     }
 
@@ -157,6 +160,7 @@ class App {
 
         // Размер поля
         elements.fieldSize.addEventListener('change', (e) => {
+            this.stop();
             const size = parseInt(e.target.value);
             this.field.resize(size);
             this.robot.fullReset();
@@ -182,7 +186,8 @@ class App {
                 const end = elements.codeEditor.selectionEnd;
                 const value = elements.codeEditor.value;
 
-                elements.codeEditor.value = value.substring(0, start) + '    ' + value.substring(end);
+                elements.codeEditor.value =
+                    value.substring(0, start) + '    ' + value.substring(end);
                 elements.codeEditor.selectionStart = elements.codeEditor.selectionEnd = start + 4;
                 this.updateLineNumbers();
             }
@@ -202,7 +207,10 @@ class App {
 
         // Консоль
         elements.clearConsoleBtn.addEventListener('click', () => {
-            elements.consoleOutput.innerHTML = '';
+            elements.consoleOutput
+                .querySelectorAll('.console-message')
+                .forEach((node) => node.remove());
+            this.programConsole.clear();
             this.log('Консоль очищена', 'info');
         });
 
@@ -211,7 +219,7 @@ class App {
             this.hideModal('examplesModal');
         });
 
-        document.querySelectorAll('.example-card').forEach(card => {
+        document.querySelectorAll('.example-card').forEach((card) => {
             card.addEventListener('click', () => {
                 const example = card.dataset.example;
                 if (this.examples[example]) {
@@ -257,9 +265,9 @@ class App {
         });
 
         // Инструменты редактора поля
-        document.querySelectorAll('.tool-btn').forEach(btn => {
+        document.querySelectorAll('.tool-btn').forEach((btn) => {
             btn.addEventListener('click', () => {
-                document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.tool-btn').forEach((b) => b.classList.remove('active'));
                 btn.classList.add('active');
                 this.editTool = btn.dataset.tool;
             });
@@ -273,7 +281,7 @@ class App {
         }
 
         // Закрытие модальных окон по клику вне
-        document.querySelectorAll('.modal').forEach(modal => {
+        document.querySelectorAll('.modal').forEach((modal) => {
             modal.addEventListener('click', (e) => {
                 if (e.target === modal) {
                     modal.classList.remove('active');
@@ -283,6 +291,9 @@ class App {
     }
 
     setupInterpreterCallbacks() {
+        this.interpreter.onOutput = (text) => this.programConsole.write(text);
+        this.interpreter.onInput = (request) => this.programConsole.read(request);
+        this.interpreter.onClearOutput = () => this.programConsole.clear();
         this.interpreter.onLog = (message, type) => {
             this.log(message, type);
         };
@@ -296,11 +307,10 @@ class App {
             this.highlightLine(line);
         };
 
-        this.interpreter.onComplete = (success) => {
+        this.interpreter.onComplete = (success, result) => {
             this.updateStatus();
-            if (success) {
-                this.setStatus('Выполнено!', 'success');
-            }
+            if (success) this.setStatus('Выполнено!', 'success');
+            else if (result.reason === 'incomplete') this.setStatus('Задача не решена', 'warning');
         };
 
         this.interpreter.onStatusChange = (status) => {
@@ -309,6 +319,7 @@ class App {
                 this.elements.runBtn.disabled = true;
                 this.elements.stepBtn.disabled = true;
             } else {
+                if (status === 'paused') this.setStatus('Пошаговое выполнение', 'ready');
                 this.elements.runBtn.disabled = false;
                 this.elements.stepBtn.disabled = false;
             }
@@ -333,15 +344,11 @@ class App {
             return;
         }
 
-        const hasMore = await this.interpreter.step(code);
+        await this.interpreter.step(code);
 
         // Принудительно перерисовываем поле после шага
         this.renderer.render();
         this.updateStatus();
-
-        if (!hasMore) {
-            this.setStatus('Завершено', 'success');
-        }
     }
 
     stop() {
@@ -357,7 +364,10 @@ class App {
         this.updateStatus();
         this.setStatus('Готов к работе', 'ready');
         const pos = this.robot.getPosition();
-        this.log(`Робот возвращён в позицию (${pos.x}, ${pos.y}), направление: ${this.robot.getDirectionName()}`, 'info');
+        this.log(
+            `Робот возвращён в позицию (${pos.x}, ${pos.y}), направление: ${this.robot.getDirectionName()}`,
+            'info'
+        );
     }
 
     // Горячие клавиши
@@ -408,7 +418,7 @@ class App {
 
     clearHighlight() {
         const spans = this.elements.lineNumbers.querySelectorAll('span');
-        spans.forEach(span => span.classList.remove('active'));
+        spans.forEach((span) => span.classList.remove('active'));
     }
 
     // Обновление статуса
@@ -451,6 +461,7 @@ class App {
 
     // Редактор поля
     openFieldEditor() {
+        this.stop();
         // Создаём копию поля для редактирования
         this.tempField = new Field(this.field.size);
 
@@ -463,6 +474,7 @@ class App {
             }
         }
 
+        this.tempField.setBase(this.field.baseX, this.field.baseY);
         this.tempRobotX = this.robot.x;
         this.tempRobotY = this.robot.y;
 
@@ -488,7 +500,7 @@ class App {
             cell: '#21262d',
             wall: '#484f58',
             target: '#f85149',
-            robot: '#ffd700'
+            robot: '#ffd700',
         };
 
         // Фон
@@ -512,11 +524,18 @@ class App {
 
                 if (cell.target) {
                     ctx.fillStyle = colors.target;
-        ctx.beginPath();
+                    ctx.beginPath();
                     ctx.arc(px + cellSize / 2, py + cellSize / 2, cellSize / 3, 0, Math.PI * 2);
-        ctx.fill();
+                    ctx.fill();
                 }
 
+                if (field.isBase(x, y)) {
+                    ctx.fillStyle = '#58a6ff';
+                    ctx.font = 'bold 30px sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText('P', px + cellSize / 2, py + cellSize / 2);
+                }
                 // Сетка
                 ctx.strokeStyle = colors.grid;
                 ctx.strokeRect(px, py, cellSize, cellSize);
@@ -546,8 +565,8 @@ class App {
         const rect = canvas.getBoundingClientRect();
         const cellSize = canvas.width / this.tempField.size;
 
-        const x = Math.floor((e.clientX - rect.left) / cellSize);
-        const y = Math.floor((e.clientY - rect.top) / cellSize);
+        const x = Math.floor(((e.clientX - rect.left) * canvas.width) / rect.width / cellSize);
+        const y = Math.floor(((e.clientY - rect.top) * canvas.height) / rect.height / cellSize);
 
         if (x < 0 || x >= this.tempField.size || y < 0 || y >= this.tempField.size) return;
 
@@ -555,6 +574,11 @@ class App {
             case 'wall':
                 const isWall = this.tempField.isWall(x, y);
                 this.tempField.setWall(x, y, !isWall);
+                break;
+            case 'base':
+                this.tempField.setWall(x, y, false);
+                this.tempField.setTarget(x, y, false);
+                this.tempField.setBase(x, y);
                 break;
             case 'robot':
                 this.tempRobotX = x;
@@ -565,6 +589,7 @@ class App {
                 this.tempField.setTarget(x, y, !isTarget);
                 break;
             case 'erase':
+                if (this.tempField.isBase(x, y)) this.tempField.setBase(-1, -1);
                 this.tempField.setWall(x, y, false);
                 this.tempField.setTarget(x, y, false);
                 break;
@@ -586,6 +611,8 @@ class App {
                 if (cell.target) this.field.setTarget(x, y, true);
             }
         }
+
+        this.field.setBase(this.tempField.baseX, this.tempField.baseY);
 
         // Устанавливаем позицию робота
         if (!this.field.isWall(this.tempRobotX, this.tempRobotY)) {
@@ -621,127 +648,29 @@ class App {
     }
 
     parseMazeFile(content, filename) {
-        const lines = content.split('\n').filter(line => line.trim().length > 0);
-
-        if (lines.length === 0) {
-            this.log('Файл пуст', 'error');
-            return;
-        }
-
-        // Определяем размеры поля
-        const height = lines.length;
-        const width = Math.max(...lines.map(line => line.length));
-        const size = Math.max(width, height);
-
-        // Создаём новое поле
-        this.field.resize(size);
-        this.field.clear();
-
-        let robotX = 0;
-        let robotY = 0;
-        let robotFound = false;
-        let baseX = -1;
-        let baseY = -1;
-
-        // Парсим содержимое файла
-        // Формат:
-        //   . = пустая клетка
-        //   w/W = стена
-        //   x/X = клетка для закрашивания
-        //   0 = начальная позиция робота
-        //   b = финиш/база (маленькая)
-        //   B = позиция робота (большая) или тоже финиш
-        for (let y = 0; y < lines.length; y++) {
-            const line = lines[y];
-
-            for (let x = 0; x < line.length; x++) {
-                const char = line[x];
-                const charLower = char.toLowerCase();
-
-                switch (charLower) {
-                    case 'w':
-                        // Стена
-                        this.field.setWall(x, y, true);
-                        break;
-
-                    case 'x':
-                        // Клетка-цель для закрашивания
-                        this.field.setTarget(x, y, true);
-                        break;
-
-                    case '0':
-                        // Начальная позиция робота
-                        robotX = x;
-                        robotY = y;
-                        robotFound = true;
-                        break;
-
-                    case 'b':
-                        if (char === 'B') {
-                            // Большая B - позиция робота
-                            robotX = x;
-                            robotY = y;
-                            robotFound = true;
-        } else {
-                            // Маленькая b - финишная точка (база)
-                            baseX = x;
-                            baseY = y;
-                            this.field.setBase(x, y);
-                        }
-                        break;
-
-                    case '.':
-                    default:
-                        // Пустая клетка - ничего не делаем
-                        break;
-                }
+        try {
+            const { field, start, width, height } = parseMaze(content);
+            this.stop();
+            this.field = field;
+            this.robot.field = field;
+            this.renderer.field = field;
+            this.robot.x = start.x;
+            this.robot.y = start.y;
+            this.robot.direction = start.direction;
+            this.robot.saveStartPosition();
+            if (!this.elements.fieldSize.querySelector(`option[value="${field.size}"]`)) {
+                const option = document.createElement('option');
+                option.value = field.size;
+                option.textContent = `${field.size}×${field.size}`;
+                this.elements.fieldSize.appendChild(option);
             }
-        }
-
-        // Устанавливаем позицию робота
-        if (robotFound) {
-            this.robot.x = robotX;
-            this.robot.y = robotY;
-        } else {
-            // Если робот не найден, ставим в первую свободную клетку
-            this.robot.x = 0;
-            this.robot.y = 0;
-
-            // Ищем первую свободную клетку
-            outer: for (let y = 0; y < size; y++) {
-                for (let x = 0; x < size; x++) {
-                    if (!this.field.isWall(x, y)) {
-                        this.robot.x = x;
-                        this.robot.y = y;
-                        robotX = x;
-                        robotY = y;
-                        break outer;
-                    }
-                }
-            }
-        }
-
-        this.robot.direction = Direction.RIGHT;
-        this.robot.saveStartPosition();
-
-        // Обновляем UI - добавляем размер в select если его нет
-        const sizeOption = this.elements.fieldSize.querySelector(`option[value="${size}"]`);
-        if (!sizeOption) {
-            const newOption = document.createElement('option');
-            newOption.value = size;
-            newOption.textContent = `${size}×${size}`;
-            this.elements.fieldSize.appendChild(newOption);
-        }
-        this.elements.fieldSize.value = size;
-
-        this.renderer.resize();
-        this.updateStatus();
-
-        this.log(`Лабиринт "${filename}" загружен (${width}×${height})`, 'success');
-        this.log(`Робот установлен в позицию (${robotX + 1}, ${robotY + 1})`, 'info');
-
-        if (baseX >= 0) {
-            this.log(`Цель: достичь точки (${baseX + 1}, ${baseY + 1})`, 'hint');
+            this.elements.fieldSize.value = field.size;
+            this.renderer.resize();
+            this.updateStatus();
+            this.setStatus('Готов к работе', 'ready');
+            this.log(`Лабиринт «${filename}» загружен (${width}×${height})`, 'success');
+        } catch (error) {
+            this.log(error.message, 'error');
         }
     }
 }

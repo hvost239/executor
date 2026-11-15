@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Исполнители — Среда разработки</title>
     <link rel="stylesheet" href="styles.css">
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
 </head>
 <body>
     <div class="app-container">
@@ -153,6 +152,7 @@
                         <button class="tool-btn active" data-tool="wall" title="Стена">🧱</button>
                         <button class="tool-btn" data-tool="robot" title="Робот">🤖</button>
                         <button class="tool-btn" data-tool="target" title="Цель">🎯</button>
+                        <button class="tool-btn" data-tool="base" title="База">🅿️</button>
                         <button class="tool-btn" data-tool="erase" title="Ластик">🧹</button>
                     </div>
                     <canvas id="fieldEditorCanvas"></canvas>
@@ -165,8 +165,6 @@
         </div>
     </div>
 
-    <script src="robot.js"></script>
-    <script src="interpreter.js"></script>
-    <script src="app.js"></script>
+    <script src="dist/bundle.js"></script>
 </body>
 </html>

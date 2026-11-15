@@ -9,21 +9,21 @@ const Direction = {
     UP: 0,
     RIGHT: 1,
     DOWN: 2,
-    LEFT: 3
+    LEFT: 3,
 };
 
 const DirectionNames = {
     [Direction.UP]: 'Вверх',
     [Direction.RIGHT]: 'Вправо',
     [Direction.DOWN]: 'Вниз',
-    [Direction.LEFT]: 'Влево'
+    [Direction.LEFT]: 'Влево',
 };
 
 const DirectionDeltas = {
     [Direction.UP]: { dx: 0, dy: -1 },
     [Direction.RIGHT]: { dx: 1, dy: 0 },
     [Direction.DOWN]: { dx: 0, dy: 1 },
-    [Direction.LEFT]: { dx: -1, dy: 0 }
+    [Direction.LEFT]: { dx: -1, dy: 0 },
 };
 
 /**
@@ -34,8 +34,8 @@ class Field {
         this.size = size;
         this.cells = [];
         this.walls = new Set();
-        this.targets = new Set();  // Грядки (где нужно посадить цветы)
-        this.painted = new Set();  // Клумбы (где цветы уже посажены)
+        this.targets = new Set(); // Грядки (где нужно посадить цветы)
+        this.painted = new Set(); // Клумбы (где цветы уже посажены)
         this.baseX = -1;
         this.baseY = -1;
         this.init();
@@ -47,10 +47,11 @@ class Field {
             this.cells[y] = [];
             for (let x = 0; x < this.size; x++) {
                 this.cells[y][x] = {
-                    x, y,
+                    x,
+                    y,
                     wall: false,
-                    target: false,  // Грядка
-                    painted: false  // Клумба (цветы посажены)
+                    target: false, // Грядка
+                    painted: false, // Клумба (цветы посажены)
                 };
             }
         }
@@ -282,24 +283,29 @@ class Robot {
         return { success: true };
     }
 
+    wallInDirection(direction) {
+        const delta = DirectionDeltas[direction];
+        return this.field.isWall(this.x + delta.dx, this.y + delta.dy);
+    }
+
     // Проверки состояния
     isWallAhead() {
-        return !this.canMove();
+        return this.wallInDirection(this.direction);
     }
 
     isWallLeft() {
         const leftDirection = (this.direction + 3) % 4;
-        return !this.canMove(leftDirection);
+        return this.wallInDirection(leftDirection);
     }
 
     isWallRight() {
         const rightDirection = (this.direction + 1) % 4;
-        return !this.canMove(rightDirection);
+        return this.wallInDirection(rightDirection);
     }
 
     isWallBehind() {
         const backDirection = (this.direction + 2) % 4;
-        return !this.canMove(backDirection);
+        return this.wallInDirection(backDirection);
     }
 
     isFreeAhead() {
@@ -322,7 +328,7 @@ class Robot {
     }
 
     isOnTarget() {
-        return this.field.isTarget(this.x, this.y);
+        return this.field.isTarget(this.x, this.y) && !this.field.isPainted(this.x, this.y);
     }
 
     isOnBase() {
@@ -359,39 +365,39 @@ class FieldRenderer {
         // Цветовая палитра в стиле Исполнителей
         this.colors = {
             // Поле
-            tile: '#d4b896',           // Песочная плитка
-            tileDark: '#c4a882',       // Тёмная плитка
-            tileLight: '#e4c8a6',      // Светлая плитка
-            grid: '#a08060',           // Линии сетки
+            tile: '#d4b896', // Песочная плитка
+            tileDark: '#c4a882', // Тёмная плитка
+            tileLight: '#e4c8a6', // Светлая плитка
+            grid: '#a08060', // Линии сетки
 
             // Грядка (нужно посадить цветы)
-            garden: '#8b5a2b',         // Коричневая земля
-            gardenDark: '#6b4423',     // Тёмная земля
+            garden: '#8b5a2b', // Коричневая земля
+            gardenDark: '#6b4423', // Тёмная земля
 
             // Клумба (цветы посажены)
-            flowerbed: '#228b22',      // Зелёная трава
+            flowerbed: '#228b22', // Зелёная трава
             flowerbedLight: '#32cd32', // Светлая трава
-            flowerPink: '#ffb6c1',     // Розовые цветы
-            flowerWhite: '#fffacd',    // Белые цветы
-            flowerCenter: '#ffd700',   // Серединка цветка
+            flowerPink: '#ffb6c1', // Розовые цветы
+            flowerWhite: '#fffacd', // Белые цветы
+            flowerCenter: '#ffd700', // Серединка цветка
 
             // Стена
-            brick: '#b22222',          // Кирпич
-            brickDark: '#8b0000',      // Тёмный кирпич
-            brickLight: '#cd5c5c',     // Светлый кирпич
-            mortar: '#d3d3d3',         // Цемент
+            brick: '#b22222', // Кирпич
+            brickDark: '#8b0000', // Тёмный кирпич
+            brickLight: '#cd5c5c', // Светлый кирпич
+            mortar: '#d3d3d3', // Цемент
 
             // База
-            baseBlue: '#1e3a5f',       // Синий фон знака
-            baseWhite: '#ffffff',      // Белая буква P
+            baseBlue: '#1e3a5f', // Синий фон знака
+            baseWhite: '#ffffff', // Белая буква P
 
             // Робот-машинка
-            robotBody: '#1e90ff',      // Синий корпус
-            robotDark: '#0066cc',      // Тёмно-синий
-            robotLight: '#4169e1',     // Светло-синий
-            robotWindow: '#87ceeb',    // Окна
-            robotWheel: '#2f2f2f',     // Колёса
-            robotYellow: '#ffd700',    // Жёлтые детали (фары)
+            robotBody: '#1e90ff', // Синий корпус
+            robotDark: '#0066cc', // Тёмно-синий
+            robotLight: '#4169e1', // Светло-синий
+            robotWindow: '#87ceeb', // Окна
+            robotWheel: '#2f2f2f', // Колёса
+            robotYellow: '#ffd700', // Жёлтые детали (фары)
         };
 
         this.resize();
@@ -409,7 +415,7 @@ class FieldRenderer {
         this.render();
     }
 
-    render() {
+    render(showRobot = true) {
         const { ctx, cellSize, field, robot, colors } = this;
         const size = cellSize * field.size;
 
@@ -450,7 +456,7 @@ class FieldRenderer {
         }
 
         // Отрисовка робота
-        this.drawRobot(robot.x * cellSize, robot.y * cellSize, robot.direction);
+        if (showRobot) this.drawRobot(robot.x * cellSize, robot.y * cellSize, robot.direction);
     }
 
     // Песочная плитка
@@ -512,11 +518,16 @@ class FieldRenderer {
             [px + size * 0.25, py + size * 0.25],
             [px + size * 0.75, py + size * 0.25],
             [px + size * 0.25, py + size * 0.75],
-            [px + size * 0.75, py + size * 0.75]
+            [px + size * 0.75, py + size * 0.75],
         ];
 
         positions.forEach(([fx, fy], i) => {
-            this.drawFlower(fx, fy, flowerSize, i % 2 === 0 ? colors.flowerPink : colors.flowerWhite);
+            this.drawFlower(
+                fx,
+                fy,
+                flowerSize,
+                i % 2 === 0 ? colors.flowerPink : colors.flowerWhite
+            );
         });
     }
 
@@ -620,10 +631,10 @@ class FieldRenderer {
 
         ctx.save();
         ctx.translate(cx, cy);
-        ctx.rotate(direction * Math.PI / 2);
+        ctx.rotate((direction * Math.PI) / 2);
 
-        const w = size * 0.7;  // Ширина машинки
-        const h = size * 0.9;  // Длина машинки
+        const w = size * 0.7; // Ширина машинки
+        const h = size * 0.9; // Длина машинки
 
         // Тень
         ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
@@ -689,7 +700,9 @@ class FieldRenderer {
 
     // Анимация движения робота
     async animateMove(fromX, fromY, toX, toY, duration = 200) {
-        return new Promise(resolve => {
+        this.stopAnimation();
+        return new Promise((resolve) => {
+            this.finishAnimation = resolve;
             const startTime = performance.now();
             const startPx = fromX * this.cellSize;
             const startPy = fromY * this.cellSize;
@@ -698,7 +711,7 @@ class FieldRenderer {
 
             const animate = (currentTime) => {
                 const elapsed = currentTime - startTime;
-                const progress = Math.min(elapsed / duration, 1);
+                const progress = duration <= 0 ? 1 : Math.min(elapsed / duration, 1);
 
                 // Easing
                 const eased = 1 - Math.pow(1 - progress, 3);
@@ -706,12 +719,15 @@ class FieldRenderer {
                 const currentPx = startPx + (endPx - startPx) * eased;
                 const currentPy = startPy + (endPy - startPy) * eased;
 
-                this.render();
+                this.render(false);
                 this.drawRobot(currentPx, currentPy, this.robot.direction);
 
                 if (progress < 1) {
                     this.animationFrame = requestAnimationFrame(animate);
                 } else {
+                    this.animationFrame = null;
+                    this.finishAnimation = null;
+                    this.render();
                     resolve();
                 }
             };
@@ -722,7 +738,9 @@ class FieldRenderer {
 
     // Анимация поворота
     async animateTurn(fromDirection, toDirection, duration = 150) {
-        return new Promise(resolve => {
+        this.stopAnimation();
+        return new Promise((resolve) => {
+            this.finishAnimation = resolve;
             const startTime = performance.now();
             const px = this.robot.x * this.cellSize;
             const py = this.robot.y * this.cellSize;
@@ -733,17 +751,20 @@ class FieldRenderer {
 
             const animate = (currentTime) => {
                 const elapsed = currentTime - startTime;
-                const progress = Math.min(elapsed / duration, 1);
+                const progress = duration <= 0 ? 1 : Math.min(elapsed / duration, 1);
                 const eased = 1 - Math.pow(1 - progress, 2);
 
                 const currentDirection = fromDirection + diff * eased;
 
-                this.render();
+                this.render(false);
                 this.drawRobot(px, py, currentDirection);
 
                 if (progress < 1) {
                     this.animationFrame = requestAnimationFrame(animate);
                 } else {
+                    this.animationFrame = null;
+                    this.finishAnimation = null;
+                    this.render();
                     resolve();
                 }
             };
@@ -757,12 +778,9 @@ class FieldRenderer {
             cancelAnimationFrame(this.animationFrame);
             this.animationFrame = null;
         }
+        this.finishAnimation?.();
+        this.finishAnimation = null;
     }
 }
 
-// Экспорт
-window.Direction = Direction;
-window.DirectionNames = DirectionNames;
-window.Field = Field;
-window.Robot = Robot;
-window.FieldRenderer = FieldRenderer;
+export { Direction, DirectionNames, Field, Robot, FieldRenderer };

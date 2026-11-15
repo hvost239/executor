@@ -1,0 +1,20 @@
+{
+  "name": "executors",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test tests/*.test.js",
+    "build": "node scripts/build.js",
+    "pretest": "node scripts/build.js",
+    "format": "prettier --write \"{app,robot,maze,interpreter}.js\" \"{language,runtime,ui,scripts,tests}/**/*.js\"",
+    "format:check": "prettier --check \"{app,robot,maze,interpreter}.js\" \"{language,runtime,ui,scripts,tests}/**/*.js\""
+  },
+  "dependencies": {
+    "chevrotain": "13.2.0"
+  },
+  "devDependencies": {
+    "esbuild": "0.28.2",
+    "happy-dom": "21.0.4",
+    "prettier": "3.10.1"
+  }
+}

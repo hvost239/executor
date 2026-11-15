@@ -816,3 +816,18 @@ body {
         margin: 0 8px 8px;
     }
 }
+
+.program-output {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    font: inherit;
+    color: var(--text-primary);
+    padding: 8px 0;
+}
+.program-output:empty { display: none; }
+.program-input { display: flex; align-items: center; gap: 12px; padding: 8px 0; }
+.program-input input {
+    margin-left: 8px; padding: 6px 8px; max-width: 240px;
+    background: var(--bg-medium); color: var(--text-primary);
+    border: 1px solid var(--accent-primary); border-radius: 4px; font: inherit;
+}

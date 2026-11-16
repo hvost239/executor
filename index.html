@@ -54,6 +54,16 @@
                         <button class="btn-icon" id="loadExampleBtn" title="Загрузить пример">📂</button>
                     </div>
                 </div>
+                <div class="code-tools" role="toolbar" aria-label="Правка кода">
+                    <button class="btn-icon" id="undoCodeBtn" type="button" title="Отменить (Ctrl+Z / ⌘Z)" aria-label="Отменить">↶</button>
+                    <button class="btn-icon" id="redoCodeBtn" type="button" title="Повторить (Ctrl+Shift+Z / ⌘⇧Z / Ctrl+Y)" aria-label="Повторить">↷</button>
+                    <button class="btn btn-ghost btn-format" id="commandsBtn" type="button">Команды ▾</button>
+                    <label for="codeLanguage">Язык команд:</label>
+                    <select id="codeLanguage">
+                        <option value="ru">Русский</option>
+                        <option value="en">English</option>
+                    </select>
+                </div>
                 <div class="editor-container">
                     <div class="line-numbers" id="lineNumbers"></div>
                     <textarea id="codeEditor" spellcheck="false" placeholder="// Программа должна иметь имя:
@@ -114,6 +124,21 @@
                 <div class="console-message hint">Задача: посадить цветы на всех грядках и вернуться на базу.</div>
             </div>
         </section>
+
+        <dialog class="task-dialog" id="commandsDialog" aria-labelledby="commandsTitle">
+            <div class="modal-header">
+                <h3 id="commandsTitle">Вставить команду</h3>
+                <button class="btn-close" id="closeCommandsBtn" type="button" aria-label="Закрыть">×</button>
+            </div>
+            <div class="modal-body">
+                <label for="commandSearch">Найти команду</label>
+                <input id="commandSearch" type="search" placeholder="Например, вперед или forward" autocomplete="off">
+                <label for="commandCategory">Раздел</label>
+                <select id="commandCategory"><option value="">Все команды</option></select>
+                <p>Команда заменит выделение или вставится в позицию курсора. Параметр для изменения будет выделен.</p>
+                <div id="commandList" aria-label="Список команд"></div>
+            </div>
+        </dialog>
 
         <dialog class="task-dialog" id="shareTaskDialog" aria-labelledby="shareTaskTitle">
             <div class="modal-header">

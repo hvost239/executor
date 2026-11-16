@@ -333,9 +333,9 @@ body {
 .editor-panel .panel-header { flex-wrap: wrap; gap: 8px; }
 .editor-panel .panel-actions { flex-wrap: wrap; }
 .btn-format { min-height: 36px; padding: 8px 12px; font-size: 12px; }
-.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn:disabled, .btn-icon:disabled { opacity: 0.5; cursor: not-allowed; }
 
-.panel-actions select {
+.panel-actions select, .code-tools select {
     padding: 6px 12px;
     background: var(--bg-light);
     border: 1px solid var(--bg-lighter);
@@ -363,6 +363,35 @@ body {
 .editor-panel {
     min-width: 0;
 }
+
+.code-tools {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 6px 12px;
+    border-bottom: 1px solid var(--bg-light);
+    font-size: 12px;
+}
+#commandList { max-height: 40vh; overflow-y: auto; }
+#commandList h4 { margin: 12px 0 6px; color: var(--text-muted); }
+.command-item {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 4px 12px;
+    width: 100%;
+    padding: 9px 8px;
+    text-align: left;
+    border: 0;
+    border-radius: 4px;
+    color: var(--text-primary);
+    background: transparent;
+    cursor: pointer;
+}
+.command-item:hover, .command-item:focus-visible { background: var(--bg-light); }
+.command-item code { overflow-wrap: anywhere; }
+.command-item span { color: var(--text-secondary); }
 
 .editor-container {
     display: flex;

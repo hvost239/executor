@@ -9,6 +9,8 @@ import { parseMaze } from '../maze.js';
 import { Robot } from '../robot.js';
 import { run } from './helpers.js';
 import { encodeProgramFile } from '../files/program-file.js';
+import { translateCode } from '../language/translate.js';
+import { BUILTIN_NAMES } from '../language/vocabulary.js';
 
 // The reference distribution is not copied into this repository.
 const root = process.env.EXECUTOR_REFERENCE_DIR;
@@ -35,6 +37,27 @@ test(
                     `${folder}/${name}: export must match original .prg bytes`
                 );
                 assert.doesNotThrow(() => compile(source), `${folder}/${name}`);
+                const english = translateCode(source, 'en');
+                const normalized = (code) =>
+                    JSON.parse(
+                        JSON.stringify(compile(code), (key, value) =>
+                            key === 'loc'
+                                ? undefined
+                                : key === 'name'
+                                  ? (BUILTIN_NAMES.get(value)?.ru ?? value)
+                                  : value
+                        )
+                    );
+                assert.deepEqual(
+                    normalized(english),
+                    normalized(source),
+                    `${folder}/${name}: translation must preserve semantics`
+                );
+                assert.deepEqual(
+                    normalized(translateCode(english, 'ru')),
+                    normalized(source),
+                    `${folder}/${name}: round trip`
+                );
                 const formatted = formatCode(source);
                 const signature = (text) =>
                     new Lexer()
@@ -60,6 +83,25 @@ test(
                     name
                 );
                 if (robot) assert.equal(robot.field.allTargetsPainted(), true, name);
+                if (mazeName) {
+                    const maze = parseMaze(
+                        fs.readFileSync(path.join(mazeFolder, mazeName), 'utf8')
+                    );
+                    const englishRobot = new Robot(maze.field);
+                    Object.assign(englishRobot, maze.start);
+                    englishRobot.saveStartPosition();
+                    run(english, {
+                        robot: englishRobot,
+                        inputs: Array(30).fill('3'),
+                        maxSteps: 100000,
+                    });
+                    assert.deepEqual(
+                        [englishRobot.x, englishRobot.y, englishRobot.direction],
+                        [robot.x, robot.y, robot.direction],
+                        name
+                    );
+                    assert.deepEqual(englishRobot.field.painted, robot.field.painted, name);
+                }
                 // Some official examples intentionally have no base or stop away from it.
                 if (name.toLowerCase() === 'z1.prg') assert.equal(robot.isOnBase(), true);
                 executed++;

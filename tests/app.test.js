@@ -91,6 +91,7 @@ test('the Share button creates a reusable snapshot of the task after the robot h
         assert.equal(f.document.activeElement, link);
         assert.equal(link.selectionEnd, link.value.length);
         const href = link.value;
+        assert.equal(new URL(href).searchParams.get('v'), f.document.documentElement.dataset.build);
         let copied;
         f.window.navigator.clipboard.writeText = async (text) => {
             copied = text;
@@ -162,6 +163,22 @@ test('sharing supports manual copying when clipboard access is unavailable', asy
             new f.window.KeyboardEvent('keydown', { key: 'F5', bubbles: true })
         );
         assert.equal(f.app.interpreter.session, null);
+    } finally {
+        await f.close();
+    }
+});
+
+test('a newly shared link replaces an earlier build version while preserving other parameters', async () => {
+    const f = await openApp('../dist/index.html', {
+        url: 'https://hvost239.github.io/executor/?v=old-build&course=1',
+    });
+    try {
+        f.document.getElementById('shareTaskBtn').click();
+        const url = new URL(f.document.getElementById('taskLink').value);
+        assert.equal(url.searchParams.get('v'), f.document.documentElement.dataset.build);
+        assert.notEqual(url.searchParams.get('v'), 'old-build');
+        assert.equal(url.searchParams.get('course'), '1');
+        assert.ok(new URLSearchParams(url.hash.slice(1)).has('maze'));
     } finally {
         await f.close();
     }

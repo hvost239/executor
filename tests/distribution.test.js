@@ -16,6 +16,7 @@ test('the Pages artifact contains both pages and their local links, scripts and 
         },
     });
     try {
+        let version;
         // Only dist is uploaded to Pages: no access to the source tree or node_modules.
         await cp(new URL('../dist/', import.meta.url), directory, { recursive: true });
         for (const page of ['index.html', 'docs.html']) {
@@ -24,6 +25,10 @@ test('the Pages artifact contains both pages and their local links, scripts and 
             window.document.write(await readFile(join(directory, page), 'utf8'));
             window.document.close();
             await window.happyDOM.waitUntilComplete();
+            const pageVersion = window.document.documentElement.dataset.build;
+            assert.match(pageVersion, /^[a-f0-9]{16}$/);
+            if (version) assert.equal(pageVersion, version);
+            version = pageVersion;
 
             if (page === 'index.html') assert.ok(window.document.querySelector('script[src]'));
             assert.ok(window.document.querySelector('link[rel="stylesheet"]'));
@@ -34,6 +39,13 @@ test('the Pages artifact contains both pages and their local links, scripts and 
                 );
                 // Links to the original author's site need not be bundled; assets must be local.
                 if (node.tagName === 'A' && resource.origin !== siteURL.origin) continue;
+                if (node.tagName !== 'A') {
+                    assert.equal(
+                        resource.searchParams.get('v'),
+                        version,
+                        'each script and stylesheet must bypass assets cached from a previous deployment'
+                    );
+                }
                 assert.equal(resource.origin, siteURL.origin);
                 assert.ok(resource.pathname.startsWith(siteURL.pathname));
                 const filename = decodeURIComponent(

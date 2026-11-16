@@ -1,4 +1,5 @@
 import { build } from 'esbuild';
+import { createHash } from 'node:crypto';
 import { mkdir, copyFile, readFile, writeFile } from 'node:fs/promises';
 
 await mkdir('dist', { recursive: true });
@@ -11,12 +12,23 @@ await build({
     sourcemap: true,
     legalComments: 'eof',
 });
-await Promise.all(
-    ['styles.css', 'docs.html', 'docs.css'].map((file) => copyFile(file, `dist/${file}`))
-);
-// The root page uses dist/bundle.js; the portable distribution keeps it beside the HTML.
-const html = await readFile('index.html', 'utf8');
-await writeFile('dist/index.html', html.replace('src="dist/bundle.js"', 'src="bundle.js"'));
+const files = ['index.html', 'docs.html', 'styles.css', 'docs.css', 'dist/bundle.js'];
+const contents = await Promise.all(files.map((file) => readFile(file, 'utf8')));
+// The same inputs produce the same version; every changed page, style or script invalidates it.
+const version = createHash('sha256').update(JSON.stringify(contents)).digest('hex').slice(0, 16);
+function versionPage(html) {
+    return html
+        .replace('<html lang="ru"', `<html lang="ru" data-build="${version}"`)
+        .replace('src="dist/bundle.js"', `src="bundle.js?v=${version}"`)
+        .replace('href="styles.css"', `href="styles.css?v=${version}"`)
+        .replace('href="docs.css"', `href="docs.css?v=${version}"`);
+}
+// Stable local filenames keep both file:// entry points portable; deployed URLs carry a version.
+await Promise.all([
+    writeFile('dist/index.html', versionPage(contents[0])),
+    writeFile('dist/docs.html', versionPage(contents[1])),
+    ...['styles.css', 'docs.css'].map((file) => copyFile(file, `dist/${file}`)),
+]);
 const packages = [
     'chevrotain',
     '@chevrotain/gast',

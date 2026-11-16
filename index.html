@@ -37,6 +37,7 @@
                     <span id="speedValue">5</span>
                 </div>
                 <a class="btn btn-ghost" href="docs.html" target="_blank" rel="noopener" aria-label="Справка (откроется в новой вкладке)">Справка ↗</a>
+                <button class="btn btn-secondary" id="shareTaskBtn" type="button">Поделиться</button>
             </nav>
         </header>
 
@@ -48,6 +49,7 @@
                     <h2>📝 Редактор кода</h2>
                     <div class="panel-actions">
                         <button class="btn btn-ghost btn-format" id="formatCodeBtn" type="button" title="Выровнять код (Alt+Shift+F)">Форматировать</button>
+                        <button class="btn btn-ghost btn-format" id="saveCodeBtn" type="button" title="Сохранить программу в файл (Ctrl+S / ⌘S)">Сохранить код</button>
                         <button class="btn-icon" id="clearCodeBtn" title="Очистить код">🗑️</button>
                         <button class="btn-icon" id="loadExampleBtn" title="Загрузить пример">📂</button>
                     </div>
@@ -112,6 +114,40 @@
                 <div class="console-message hint">Задача: посадить цветы на всех грядках и вернуться на базу.</div>
             </div>
         </section>
+
+        <dialog class="task-dialog" id="shareTaskDialog" aria-labelledby="shareTaskTitle">
+            <div class="modal-header">
+                <h3 id="shareTaskTitle">Поделиться задачей</h3>
+                <button class="btn-close" id="closeShareTaskBtn" type="button" aria-label="Закрыть">×</button>
+            </div>
+            <div class="modal-body">
+                <p>Ссылка сохранит лабиринт, начальную позицию и направление Робота, а также текущий код. Получатель сможет запустить решение с начала.</p>
+                <p id="localShareHint" hidden>Вы открыли локальный файл. Для отправки ссылки другому человеку создайте её в опубликованной версии сайта.</p>
+                <label for="taskLink">Ссылка на лабиринт и решение</label>
+                <textarea id="taskLink" rows="4" readonly spellcheck="false"></textarea>
+                <button class="btn btn-primary" id="copyTaskLinkBtn" type="button">Копировать ссылку</button>
+                <p id="shareStatus" role="status" aria-live="polite"></p>
+            </div>
+        </dialog>
+
+        <dialog class="task-dialog" id="saveProgramDialog" aria-labelledby="saveProgramTitle">
+            <div class="modal-header">
+                <h3 id="saveProgramTitle">Сохранить код</h3>
+                <button class="btn-close" id="closeSaveProgramBtn" type="button" aria-label="Закрыть">×</button>
+            </div>
+            <form class="modal-body" id="saveProgramForm">
+                <label for="programFilename">Имя файла</label>
+                <input id="programFilename" type="text" value="program.prg" required>
+                <label for="programEncoding">Формат</label>
+                <select id="programEncoding" aria-describedby="programEncodingHint">
+                    <option value="windows-1251">Оригинальный .prg — Windows-1251</option>
+                    <option value="utf-8">Unicode .prg — UTF-8</option>
+                </select>
+                <p id="programEncodingHint">Для оригинальных «Исполнителей» используйте Windows-1251. UTF-8 сохраняет также эмодзи и другие символы Unicode.</p>
+                <button class="btn btn-primary" type="submit">Скачать .prg</button>
+                <p id="saveProgramStatus" role="status" aria-live="polite"></p>
+            </form>
+        </dialog>
 
         <!-- Examples Modal -->
         <div class="modal" id="examplesModal">

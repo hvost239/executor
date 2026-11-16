@@ -3,11 +3,11 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { Window } from 'happy-dom';
 
-async function openApp(entry = '../dist/index.html') {
+async function openApp(entry = '../dist/index.html', { url } = {}) {
     // Only our own built application is evaluated; student text is handled by Runtime.
     const pageURL = new URL(entry, import.meta.url);
     const window = new Window({
-        url: pageURL.href,
+        url: url ?? pageURL.href,
         settings: {
             enableJavaScriptEvaluation: true,
             suppressInsecureJavaScriptEnvironmentWarning: true,
@@ -42,6 +42,222 @@ async function openApp(entry = '../dist/index.html') {
 async function settle() {
     for (let i = 0; i < 20; i++) await Promise.resolve();
 }
+
+test('URL parameters load a maze and exact program text without running it', async () => {
+    const program = 'Программа\n{\n    выводстр "<b>Привет & + # %</b>";\n}';
+    const url =
+        'https://hvost239.github.io/executor/?' +
+        new URLSearchParams({
+            maze: '2xb\n.w.\n...',
+            program,
+        });
+    const f = await openApp('../dist/index.html', { url });
+    try {
+        assert.equal(f.app.elements.codeEditor.value, program);
+        assert.equal(f.app.elements.lineNumbers.children.length, 4);
+        assert.equal(f.app.field.size, 3);
+        assert.equal(f.app.elements.fieldSize.value, '3');
+        assert.equal(f.app.field.isTarget(1, 0), true);
+        assert.equal(f.app.field.isBase(2, 0), true);
+        assert.equal(f.app.robot.startDirection, 1);
+        assert.equal(f.app.interpreter.session, null);
+        assert.equal(f.document.querySelector('.program-output'), null);
+        f.app.elements.runBtn.click();
+        await settle();
+        assert.equal(
+            f.document.querySelector('.program-output').textContent,
+            '<b>Привет & + # %</b>\n'
+        );
+        assert.equal(f.document.querySelector('.program-output b'), null);
+    } finally {
+        await f.close();
+    }
+});
+
+test('the Share button creates a reusable snapshot of the task after the robot has moved', async () => {
+    const f = await openApp('../dist/index.html', { url: 'https://hvost239.github.io/executor/' });
+    let reopened;
+    try {
+        f.app.parseMazeFile('2xb\n.w.\n...', 'example.maz');
+        const program = 'Задача{вперед(1);посади;вперед(1);}';
+        f.app.elements.codeEditor.value = program;
+        f.app.robot.forward();
+        f.app.robot.paint();
+        f.app.robot.turnRight();
+        f.document.getElementById('shareTaskBtn').click();
+        assert.equal(f.document.getElementById('shareTaskDialog').open, true);
+        assert.equal(f.document.getElementById('localShareHint').hidden, true);
+        const link = f.document.getElementById('taskLink');
+        assert.equal(f.document.activeElement, link);
+        assert.equal(link.selectionEnd, link.value.length);
+        const href = link.value;
+        let copied;
+        f.window.navigator.clipboard.writeText = async (text) => {
+            copied = text;
+        };
+        f.document.getElementById('copyTaskLinkBtn').click();
+        await settle();
+        assert.equal(copied, href);
+        assert.match(f.document.getElementById('shareStatus').textContent, /скопирована/);
+        // Edits after creating the link cannot alter the saved task.
+        f.app.elements.codeEditor.value = 'другая{}';
+        reopened = await openApp('../dist/index.html', { url: href });
+        assert.equal(reopened.app.elements.codeEditor.value, program);
+        assert.equal(reopened.app.robot.x, 0);
+        assert.equal(reopened.app.robot.y, 0);
+        assert.equal(reopened.app.robot.direction, 1);
+        assert.equal(reopened.app.field.isTarget(1, 0), true);
+        assert.equal(reopened.app.field.isBase(2, 0), true);
+        assert.equal(reopened.app.field.painted.size, 0);
+        assert.equal(f.app.robot.x, 1);
+        assert.equal(f.app.field.isPainted(1, 0), true);
+        f.document.getElementById('closeShareTaskBtn').click();
+        assert.equal(f.document.getElementById('shareTaskDialog').open, false);
+    } finally {
+        await reopened?.close();
+        await f.close();
+    }
+});
+
+test('opening another fragment link in the same tab cancels the old run and loads the new program', async () => {
+    const f = await openApp('../dist/index.html', { url: 'https://hvost239.github.io/executor/' });
+    try {
+        f.app.elements.codeEditor.value = 'main{int n;input n;}';
+        f.app.elements.runBtn.click();
+        await settle();
+        assert.ok(f.document.querySelector('.program-input'));
+        f.window.location.hash = new URLSearchParams({ program: 'Новая{выводстр 42;}' }).toString();
+        f.window.dispatchEvent(new f.window.HashChangeEvent('hashchange'));
+        await settle();
+        assert.equal(f.app.elements.codeEditor.value, 'Новая{выводстр 42;}');
+        assert.equal(f.app.interpreter.isRunning, false);
+        assert.equal(f.document.querySelector('.program-input'), null);
+        assert.equal(f.app.field.size, 8);
+        f.app.elements.runBtn.click();
+        await settle();
+        assert.equal(f.document.querySelector('.program-output').textContent, '42\n');
+    } finally {
+        await f.close();
+    }
+});
+
+test('sharing supports manual copying when clipboard access is unavailable', async () => {
+    const f = await openApp();
+    try {
+        f.document.getElementById('shareTaskBtn').click();
+        assert.equal(f.document.getElementById('localShareHint').hidden, false);
+        f.window.navigator.clipboard.writeText = async () => {
+            throw new Error('denied');
+        };
+        f.document.getElementById('copyTaskLinkBtn').click();
+        await settle();
+        const link = f.document.getElementById('taskLink');
+        assert.equal(f.document.activeElement, link);
+        assert.equal(link.selectionStart, 0);
+        assert.equal(link.selectionEnd, link.value.length);
+        assert.match(f.document.getElementById('shareStatus').textContent, /вручную/);
+        assert.equal(f.document.getElementById('copyTaskLinkBtn').disabled, false);
+        // App shortcuts should not run code or reset a task while copying its URL.
+        f.document.dispatchEvent(
+            new f.window.KeyboardEvent('keydown', { key: 'F5', bubbles: true })
+        );
+        assert.equal(f.app.interpreter.session, null);
+    } finally {
+        await f.close();
+    }
+});
+
+test('an invalid task link shows an error and leaves the initial editor and field intact', async () => {
+    const url =
+        'https://hvost239.github.io/executor/?' +
+        new URLSearchParams({
+            maze: 'bad maze',
+            program: 'поврежденная задача{}',
+        });
+    const f = await openApp('../dist/index.html', { url });
+    try {
+        assert.equal(f.app.field.size, 8);
+        assert.equal(f.app.elements.codeEditor.value, '');
+        assert.match(f.app.elements.consoleOutput.textContent, /Не удалось загрузить задачу/);
+        assert.equal(f.app.elements.runBtn.disabled, false);
+    } finally {
+        await f.close();
+    }
+});
+
+test('Save Code downloads original .prg bytes and leaves the editor untouched', async () => {
+    const f = await openApp();
+    try {
+        const source = 'Решение\n{\n    выводстр "Привет, ёж!";\n}';
+        f.app.elements.codeEditor.value = source;
+        let savedBlob, savedName, savedURL;
+        const revoked = [];
+        f.window.URL.createObjectURL = (blob) => {
+            savedBlob = blob;
+            return 'blob:program-file';
+        };
+        f.window.URL.revokeObjectURL = (url) => revoked.push(url);
+        f.window.HTMLAnchorElement.prototype.click = function () {
+            savedName = this.download;
+            savedURL = this.href;
+        };
+        f.document.getElementById('saveCodeBtn').click();
+        assert.equal(f.document.getElementById('saveProgramDialog').open, true);
+        assert.equal(f.document.getElementById('programFilename').value, 'Решение.prg');
+        f.document
+            .getElementById('saveProgramForm')
+            .dispatchEvent(new f.window.Event('submit', { cancelable: true }));
+        assert.equal(savedName, 'Решение.prg');
+        assert.equal(savedURL, 'blob:program-file');
+        const bytes = new Uint8Array(await savedBlob.arrayBuffer());
+        assert.equal(new TextDecoder('windows-1251').decode(bytes), source.replace(/\n/g, '\r\n'));
+        assert.equal(f.app.elements.codeEditor.value, source);
+        assert.equal(f.document.querySelector('a[download]'), null);
+        f.window.dispatchEvent(new f.window.Event('pagehide'));
+        assert.deepEqual(revoked, ['blob:program-file']);
+        f.document.getElementById('closeSaveProgramBtn').click();
+        assert.equal(f.document.getElementById('saveProgramDialog').open, false);
+    } finally {
+        await f.close();
+    }
+});
+
+test('save shortcut opens the dialog and UTF-8 can save text unsupported by the original format', async () => {
+    const f = await openApp();
+    try {
+        const source = 'Робот{выводстр "🤖";}';
+        f.app.elements.codeEditor.value = source;
+        let savedBlob;
+        f.window.URL.createObjectURL = (blob) => {
+            savedBlob = blob;
+            return 'blob:unicode-file';
+        };
+        f.window.URL.revokeObjectURL = () => {};
+        f.window.HTMLAnchorElement.prototype.click = () => {};
+        const shortcut = new f.window.KeyboardEvent('keydown', {
+            code: 'KeyS',
+            metaKey: true,
+            bubbles: true,
+            cancelable: true,
+        });
+        f.app.elements.codeEditor.dispatchEvent(shortcut);
+        assert.equal(shortcut.defaultPrevented, true);
+        assert.equal(f.document.getElementById('saveProgramDialog').open, true);
+        const submit = () =>
+            f.document
+                .getElementById('saveProgramForm')
+                .dispatchEvent(new f.window.Event('submit', { cancelable: true }));
+        submit();
+        assert.equal(savedBlob, undefined);
+        assert.match(f.document.getElementById('saveProgramStatus').textContent, /Выберите UTF-8/);
+        f.document.getElementById('programEncoding').value = 'utf-8';
+        submit();
+        assert.equal(new TextDecoder().decode(await savedBlob.arrayBuffer()), source);
+        assert.equal(f.app.elements.codeEditor.value, source);
+    } finally {
+        await f.close();
+    }
+});
 
 test('Format button and keyboard shortcut update the editor and line numbers', async () => {
     const f = await openApp();

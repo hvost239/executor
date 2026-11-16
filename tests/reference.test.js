@@ -8,6 +8,7 @@ import { Lexer } from '../language/lexer.js';
 import { parseMaze } from '../maze.js';
 import { Robot } from '../robot.js';
 import { run } from './helpers.js';
+import { encodeProgramFile } from '../files/program-file.js';
 
 // The reference distribution is not copied into this repository.
 const root = process.env.EXECUTOR_REFERENCE_DIR;
@@ -26,8 +27,12 @@ test(
         for (const folder of ['robot', 'kurs', 'drawer', 'turtle', 'fractals']) {
             const directory = path.join(root, 'program', folder);
             for (const name of fs.readdirSync(directory).filter((name) => /\.prg$/i.test(name))) {
-                const source = new TextDecoder('windows-1251').decode(
-                    fs.readFileSync(path.join(directory, name))
+                const originalBytes = fs.readFileSync(path.join(directory, name));
+                const source = new TextDecoder('windows-1251').decode(originalBytes);
+                assert.deepEqual(
+                    Buffer.from(encodeProgramFile(source)),
+                    originalBytes,
+                    `${folder}/${name}: export must match original .prg bytes`
                 );
                 assert.doesNotThrow(() => compile(source), `${folder}/${name}`);
                 const formatted = formatCode(source);

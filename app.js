@@ -4,6 +4,9 @@ import { parseMaze } from './maze.js';
 import { ProgramConsole } from './ui/program-console.js';
 import { formatCode } from './language/formatter.js';
 import { diagnostic } from './language/errors.js';
+import { readTaskLink } from './sharing/task-link.js';
+import { TaskShareDialog } from './ui/task-share.js';
+import { ProgramFileDialog } from './ui/program-file.js';
 
 /**
  * Исполнители — Главный модуль приложения
@@ -139,6 +142,21 @@ class App {
         };
 
         this.programConsole = new ProgramConsole(this.elements.consoleOutput);
+        this.programFile = new ProgramFileDialog({
+            getSource: () => this.elements.codeEditor.value,
+        });
+        this.taskShare = new TaskShareDialog({
+            getTask: () => ({
+                field: this.field,
+                start: {
+                    x: this.robot.startX,
+                    y: this.robot.startY,
+                    direction: this.robot.startDirection,
+                },
+                program: this.elements.codeEditor.value,
+            }),
+            onError: (message) => this.log(message, 'error'),
+        });
         this.init();
     }
 
@@ -156,9 +174,11 @@ class App {
         window.addEventListener('resize', () => {
             this.renderer.resize();
         });
+        window.addEventListener('hashchange', () => this.loadTaskFromLink());
 
         this.log('🚗 Робот-садовник готов к работе!', 'info');
         this.log('Загрузите лабиринт (📥) и напишите программу для посадки цветов.', 'hint');
+        this.loadTaskFromLink();
     }
 
     setupEventListeners() {
@@ -414,6 +434,12 @@ class App {
 
     // Горячие клавиши
     handleHotkeys(e) {
+        if (this.taskShare.isOpen || this.programFile.isOpen) return;
+        if ((e.ctrlKey || e.metaKey) && e.code === 'KeyS') {
+            e.preventDefault();
+            this.programFile.open();
+            return;
+        }
         if (e.altKey && e.shiftKey && e.code === 'KeyF') {
             e.preventDefault();
             this.formatEditor();
@@ -696,28 +722,51 @@ class App {
 
     parseMazeFile(content, filename) {
         try {
-            const { field, start, width, height } = parseMaze(content);
-            this.stop();
-            this.field = field;
-            this.robot.field = field;
-            this.renderer.field = field;
-            this.robot.x = start.x;
-            this.robot.y = start.y;
-            this.robot.direction = start.direction;
-            this.robot.saveStartPosition();
-            if (!this.elements.fieldSize.querySelector(`option[value="${field.size}"]`)) {
-                const option = document.createElement('option');
-                option.value = field.size;
-                option.textContent = `${field.size}×${field.size}`;
-                this.elements.fieldSize.appendChild(option);
-            }
-            this.elements.fieldSize.value = field.size;
-            this.renderer.resize();
-            this.updateStatus();
-            this.setStatus('Готов к работе', 'ready');
+            const maze = parseMaze(content);
+            const { width, height } = maze;
+            this.applyMaze(maze);
             this.log(`Лабиринт «${filename}» загружен (${width}×${height})`, 'success');
         } catch (error) {
             this.log(error.message, 'error');
+        }
+    }
+
+    applyMaze({ field, start }) {
+        this.stop();
+        this.field = field;
+        this.robot.field = field;
+        this.renderer.field = field;
+        Object.assign(this.robot, start);
+        this.robot.saveStartPosition();
+        if (!this.elements.fieldSize.querySelector(`option[value="${field.size}"]`)) {
+            const option = document.createElement('option');
+            option.value = String(field.size);
+            option.textContent = `${field.size}×${field.size}`;
+            this.elements.fieldSize.appendChild(option);
+        }
+        this.elements.fieldSize.value = String(field.size);
+        this.renderer.resize();
+        this.updateStatus();
+        this.setStatus('Готов к работе', 'ready');
+    }
+
+    loadTaskFromLink() {
+        try {
+            const task = readTaskLink(window.location.href);
+            if (!task) return;
+            if (task.maze) this.applyMaze(task.maze);
+            else this.stop();
+            if (task.program !== null) {
+                this.elements.codeEditor.value = task.program;
+                this.updateLineNumbers();
+            }
+            this.setStatus('Готов к работе', 'ready');
+            this.log(
+                'Задача загружена из ссылки. Нажмите «Выполнить», чтобы запустить программу.',
+                'success'
+            );
+        } catch (error) {
+            this.log(`Не удалось загрузить задачу из ссылки: ${error.message}`, 'error');
         }
     }
 }

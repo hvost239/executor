@@ -9,7 +9,10 @@ export class TaskShareDialog {
         this.copyButton = document.getElementById('copyTaskLinkBtn');
         document.getElementById('shareTaskBtn').addEventListener('click', () => {
             try {
-                this.link.value = createTaskLink(window.location.href, getTask());
+                const url = new URL(window.location.href);
+                const version = document.documentElement.dataset.build;
+                if (version) url.searchParams.set('v', version);
+                this.link.value = createTaskLink(url.href, getTask());
                 this.status.textContent = '';
                 document.getElementById('localShareHint').hidden =
                     window.location.protocol !== 'file:';

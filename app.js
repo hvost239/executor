@@ -7,6 +7,9 @@ import { diagnostic } from './language/errors.js';
 import { readTaskLink } from './sharing/task-link.js';
 import { TaskShareDialog } from './ui/task-share.js';
 import { ProgramFileDialog } from './ui/program-file.js';
+import { CodeEditor } from './ui/code-editor.js';
+import { CommandPalette } from './ui/command-palette.js';
+import { translateCode } from './language/translate.js';
 
 /**
  * Исполнители — Главный модуль приложения
@@ -26,6 +29,7 @@ class App {
         this.elements = {
             // Редактор
             codeEditor: document.getElementById('codeEditor'),
+            codeLanguage: document.getElementById('codeLanguage'),
             lineNumbers: document.getElementById('lineNumbers'),
 
             // Кнопки управления
@@ -142,6 +146,18 @@ class App {
         };
 
         this.programConsole = new ProgramConsole(this.elements.consoleOutput);
+        this.editor = new CodeEditor(this.elements.codeEditor, {
+            undoButton: document.getElementById('undoCodeBtn'),
+            redoButton: document.getElementById('redoCodeBtn'),
+            onChange: () => {
+                if (this.interpreter.session) this.stop();
+                this.updateLineNumbers();
+                this.clearHighlight();
+                this.elements.lineNumbers.scrollTop = this.elements.codeEditor.scrollTop;
+                this.elements.codeLanguage.value = this.editor.language;
+            },
+        });
+        this.commands = new CommandPalette(this.editor, () => this.editor.language);
         this.programFile = new ProgramFileDialog({
             getSource: () => this.elements.codeEditor.value,
         });
@@ -209,35 +225,19 @@ class App {
         });
 
         // Редактор кода
-        elements.codeEditor.addEventListener('input', () => {
-            this.updateLineNumbers();
-        });
-
         elements.codeEditor.addEventListener('scroll', () => {
             elements.lineNumbers.scrollTop = elements.codeEditor.scrollTop;
         });
 
-        elements.codeEditor.addEventListener('keydown', (e) => {
-            // Tab для отступов
-            if (e.key === 'Tab') {
-                e.preventDefault();
-                const start = elements.codeEditor.selectionStart;
-                const end = elements.codeEditor.selectionEnd;
-                const value = elements.codeEditor.value;
-
-                elements.codeEditor.value =
-                    value.substring(0, start) + '    ' + value.substring(end);
-                elements.codeEditor.selectionStart = elements.codeEditor.selectionEnd = start + 4;
-                this.updateLineNumbers();
-            }
-        });
+        elements.codeLanguage.addEventListener('change', () =>
+            this.translateEditor(elements.codeLanguage.value)
+        );
 
         // Кнопки редактора
         elements.formatCodeBtn.addEventListener('click', () => this.formatEditor());
         elements.clearCodeBtn.addEventListener('click', () => {
             if (confirm('Очистить код?')) {
-                elements.codeEditor.value = '';
-                this.updateLineNumbers();
+                this.editor.setValue('', { focus: true });
             }
         });
 
@@ -263,8 +263,7 @@ class App {
             card.addEventListener('click', () => {
                 const example = card.dataset.example;
                 if (this.examples[example]) {
-                    elements.codeEditor.value = this.examples[example];
-                    this.updateLineNumbers();
+                    this.editor.setValue(this.examples[example], { language: 'ru', focus: true });
                     this.hideModal('examplesModal');
                     this.log(`Загружен пример: ${card.querySelector('h4').textContent}`, 'info');
                 }
@@ -376,16 +375,21 @@ class App {
             const formatted = formatCode(editor.value);
             if (formatted === editor.value) return;
             if (this.interpreter.session) this.stop();
-            editor.value = formatted;
-            this.updateLineNumbers();
-            this.clearHighlight();
-            editor.focus();
-            editor.setSelectionRange(0, 0);
-            editor.scrollTop = 0;
+            this.editor.setValue(formatted, { focus: true });
             this.elements.lineNumbers.scrollTop = 0;
             this.log('Код отформатирован', 'info');
         } catch (error) {
             this.log(`Не удалось отформатировать код: ${diagnostic(error)}`, 'error');
+        }
+    }
+
+    translateEditor(language) {
+        try {
+            const source = translateCode(this.elements.codeEditor.value, language);
+            this.editor.setValue(source, { language, focus: true });
+        } catch (error) {
+            this.elements.codeLanguage.value = this.editor.language;
+            this.log(`Не удалось переключить язык: ${diagnostic(error)}`, 'error');
         }
     }
 
@@ -434,7 +438,7 @@ class App {
 
     // Горячие клавиши
     handleHotkeys(e) {
-        if (this.taskShare.isOpen || this.programFile.isOpen) return;
+        if (this.taskShare.isOpen || this.programFile.isOpen || this.commands.isOpen) return;
         if ((e.ctrlKey || e.metaKey) && e.code === 'KeyS') {
             e.preventDefault();
             this.programFile.open();
@@ -757,8 +761,7 @@ class App {
             if (task.maze) this.applyMaze(task.maze);
             else this.stop();
             if (task.program !== null) {
-                this.elements.codeEditor.value = task.program;
-                this.updateLineNumbers();
+                this.editor.setValue(task.program, { resetHistory: true });
             }
             this.setStatus('Готов к работе', 'ready');
             this.log(

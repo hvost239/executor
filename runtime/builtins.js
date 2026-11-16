@@ -1,10 +1,11 @@
 import { RobotRuntimeError } from '../language/errors.js';
 import { scalar, numberValue, integer, textValue, isText } from './values.js';
+import { BUILTIN_NAMES } from '../language/vocabulary.js';
 
 /** Shared signatures are used by the analyzer; implementations are used by the VM. */
 export const builtins = new Map();
 function register(names, arity, returns, implementation, extra = {}) {
-    for (const name of names)
+    for (const name of new Set(names.flatMap((name) => BUILTIN_NAMES.get(name)?.aliases ?? [name])))
         builtins.set(name, {
             name,
             arity: Array.isArray(arity) ? arity : [arity],

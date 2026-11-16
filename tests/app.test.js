@@ -43,6 +43,175 @@ async function settle() {
     for (let i = 0; i < 20; i++) await Promise.resolve();
 }
 
+function typeInEditor(f, text, inputType = 'insertText') {
+    const editor = f.app.elements.codeEditor;
+    editor.dispatchEvent(
+        new f.window.InputEvent('beforeinput', { inputType, data: text, cancelable: true })
+    );
+    editor.setRangeText(text, editor.selectionStart, editor.selectionEnd, 'end');
+    editor.dispatchEvent(new f.window.InputEvent('input', { inputType, data: text }));
+}
+function shortcut(f, code, options = {}) {
+    const event = new f.window.KeyboardEvent('keydown', {
+        code,
+        ctrlKey: true,
+        bubbles: true,
+        cancelable: true,
+        ...options,
+    });
+    f.app.elements.codeEditor.dispatchEvent(event);
+    assert.equal(event.defaultPrevented, true);
+}
+
+test('Ctrl/Command undo and redo preserve typing history across Tab and formatting', async () => {
+    const f = await openApp();
+    try {
+        const editor = f.app.elements.codeEditor;
+        typeInEditor(f, 'main');
+        typeInEditor(f, '{}');
+        const tab = new f.window.KeyboardEvent('keydown', {
+            key: 'Tab',
+            bubbles: true,
+            cancelable: true,
+        });
+        editor.dispatchEvent(tab);
+        assert.equal(editor.value, 'main{}    ');
+        shortcut(f, 'KeyZ');
+        assert.equal(editor.value, 'main{}');
+        assert.equal(editor.selectionStart, 6);
+        f.app.elements.formatCodeBtn.click();
+        assert.equal(editor.value, 'main\n{\n}\n');
+        shortcut(f, 'KeyZ', { ctrlKey: false, metaKey: true, key: 'я' });
+        assert.equal(editor.value, 'main{}');
+        shortcut(f, 'KeyZ');
+        assert.equal(editor.value, '');
+        shortcut(f, 'KeyZ', { shiftKey: true });
+        assert.equal(editor.value, 'main{}');
+        shortcut(f, 'KeyY');
+        assert.equal(editor.value, 'main\n{\n}\n');
+        assert.equal(f.app.elements.lineNumbers.children.length, 4);
+    } finally {
+        await f.close();
+    }
+});
+
+test('paste, clear and loading an example are undoable and restore selections', async () => {
+    const f = await openApp();
+    try {
+        const editor = f.app.elements.codeEditor;
+        f.app.editor.setValue('main{right;}', { resetHistory: true });
+        editor.setSelectionRange(5, 10, 'backward');
+        typeInEditor(f, 'left', 'insertFromPaste');
+        f.document.getElementById('undoCodeBtn').click();
+        assert.equal(editor.value, 'main{right;}');
+        assert.equal(editor.selectionStart, 5);
+        assert.equal(editor.selectionEnd, 10);
+        assert.equal(editor.selectionDirection, 'backward');
+        f.document.querySelector('[data-example="square"]').click();
+        f.window.confirm = () => true;
+        f.app.elements.clearCodeBtn.click();
+        shortcut(f, 'KeyZ');
+        assert.equal(editor.value, f.app.examples.square);
+        shortcut(f, 'KeyZ');
+        assert.equal(editor.value, 'main{right;}');
+        typeInEditor(f, 'around', 'insertFromPaste');
+        assert.equal(f.document.getElementById('redoCodeBtn').disabled, true);
+    } finally {
+        await f.close();
+    }
+});
+
+test('command search inserts at the saved cursor, selects the parameter and undoes in one action', async () => {
+    const f = await openApp();
+    try {
+        const editor = f.app.elements.codeEditor;
+        const source = 'main\n{\n    \n}';
+        f.app.editor.setValue(source, { resetHistory: true });
+        editor.setSelectionRange(11, 11);
+        f.document.getElementById('commandsBtn').click();
+        const search = f.document.getElementById('commandSearch');
+        search.value = 'forward';
+        search.dispatchEvent(new f.window.Event('input'));
+        assert.equal(f.document.querySelectorAll('.command-item').length, 1);
+        const outsideUndo = new f.window.KeyboardEvent('keydown', {
+            code: 'KeyZ',
+            ctrlKey: true,
+            bubbles: true,
+            cancelable: true,
+        });
+        search.dispatchEvent(outsideUndo);
+        assert.equal(outsideUndo.defaultPrevented, false);
+        f.document.querySelector('[data-command="вперед"]').click();
+        assert.equal(editor.value, 'main\n{\n    вперед(1);\n}');
+        assert.equal(editor.value.slice(editor.selectionStart, editor.selectionEnd), '1');
+        assert.equal(f.document.activeElement, editor);
+        shortcut(f, 'KeyZ');
+        assert.equal(editor.value, source);
+    } finally {
+        await f.close();
+    }
+});
+
+test('language switching and English templates participate in editor history', async () => {
+    const f = await openApp();
+    try {
+        const source = 'Моя{если(не база) направо; выводстр "направо";}';
+        f.app.editor.setValue(source, { resetHistory: true });
+        const language = f.app.elements.codeLanguage;
+        language.value = 'en';
+        language.dispatchEvent(new f.window.Event('change'));
+        assert.equal(
+            f.app.elements.codeEditor.value,
+            'Моя{if(not base) right; println "направо";}'
+        );
+        shortcut(f, 'KeyZ');
+        assert.equal(f.app.elements.codeEditor.value, source);
+        assert.equal(language.value, 'ru');
+        shortcut(f, 'KeyY');
+        assert.equal(language.value, 'en');
+        f.app.editor.setValue('main\n{\n    \n}', { resetHistory: true });
+        f.app.elements.codeEditor.setSelectionRange(11, 11);
+        f.document.getElementById('commandsBtn').click();
+        f.document.querySelector('[data-command="пока"]').click();
+        assert.equal(
+            f.app.elements.codeEditor.value,
+            'main\n{\n    while (false)\n    {\n        \n    }\n}'
+        );
+        f.app.editor.setValue('main{', { language: 'ru' });
+        language.value = 'en';
+        language.dispatchEvent(new f.window.Event('change'));
+        assert.equal(f.app.elements.codeEditor.value, 'main{');
+        assert.equal(language.value, 'ru');
+    } finally {
+        await f.close();
+    }
+});
+
+test('IME composition is one undo step and editing cancels pending program input', async () => {
+    const f = await openApp();
+    try {
+        const editor = f.app.elements.codeEditor;
+        editor.dispatchEvent(new f.window.CompositionEvent('compositionstart'));
+        typeInEditor(f, 'т', 'insertCompositionText');
+        editor.setSelectionRange(0, 1);
+        typeInEditor(f, 'текст', 'insertCompositionText');
+        editor.dispatchEvent(new f.window.CompositionEvent('compositionend'));
+        shortcut(f, 'KeyZ');
+        assert.equal(editor.value, '');
+        f.app.editor.setValue('main{int n;input n;}', { resetHistory: true });
+        f.app.elements.runBtn.click();
+        await settle();
+        assert.ok(f.document.querySelector('.program-input'));
+        editor.setSelectionRange(editor.value.length, editor.value.length);
+        typeInEditor(f, ' ');
+        await settle();
+        assert.equal(f.app.interpreter.isRunning, false);
+        assert.equal(f.document.querySelector('.program-input'), null);
+    } finally {
+        await f.close();
+    }
+});
+
 test('URL parameters load a maze and exact program text without running it', async () => {
     const program = 'Программа\n{\n    выводстр "<b>Привет & + # %</b>";\n}';
     const url =

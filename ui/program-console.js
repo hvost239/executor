@@ -2,8 +2,9 @@ import { abortError } from '../runtime/cancellation.js';
 
 /** Text streams and cancellable input, independent of the application's diagnostic log. */
 export class ProgramConsole {
-    constructor(container) {
+    constructor(container, inputContainer) {
         this.container = container;
+        this.inputContainer = inputContainer;
         this.output = document.createElement('pre');
         this.output.className = 'program-output';
         this.output.setAttribute('aria-label', 'Вывод программы');
@@ -32,9 +33,11 @@ export class ProgramConsole {
             button.className = 'btn btn-secondary';
             button.textContent = 'Ввести';
             form.append(label, button);
-            this.container.appendChild(form);
+            this.inputContainer.appendChild(form);
+            this.inputContainer.hidden = false;
             const cleanup = () => {
                 form.remove();
+                this.inputContainer.hidden = !this.inputContainer.childElementCount;
                 signal.removeEventListener('abort', abort);
             };
             const abort = () => {

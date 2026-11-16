@@ -489,6 +489,7 @@ body {
    ============================================ */
 .console-panel {
     height: var(--console-height);
+    flex-shrink: 0;
     margin: 0 16px 16px;
     background: var(--bg-dark);
     border-radius: var(--border-radius-lg);
@@ -508,6 +509,7 @@ body {
 
 .console-output {
     flex: 1;
+    min-height: 0;
     padding: 12px 18px;
     overflow-y: auto;
     font-family: 'JetBrains Mono', monospace;
@@ -829,9 +831,21 @@ body {
     padding: 8px 0;
 }
 .program-output:empty { display: none; }
-.program-input { display: flex; align-items: center; gap: 12px; padding: 8px 0; }
+.console-panel.waiting-input {
+    height: clamp(220px, 35vh, 320px);
+    border-color: var(--accent-primary);
+}
+.status-item.waiting { color: var(--accent-warning); font-weight: 700; }
+.console-input {
+    flex-shrink: 0;
+    padding: 12px 18px;
+    border-top: 1px solid var(--accent-primary);
+    background: var(--bg-medium);
+}
+.program-input { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; }
+.program-input label { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; flex: 1 1 260px; }
 .program-input input {
-    margin-left: 8px; padding: 6px 8px; max-width: 240px;
+    padding: 6px 8px; flex: 1 1 120px; min-width: 0; max-width: 240px;
     background: var(--bg-medium); color: var(--text-primary);
     border: 1px solid var(--accent-primary); border-radius: 4px; font: inherit;
 }

@@ -95,13 +95,13 @@
                 <div class="robot-status">
                     <span class="status-item">📍 Позиция: <strong id="robotPosition">(1, 1)</strong></span>
                     <span class="status-item">🧭 Направление: <strong id="robotDirection">Вправо</strong></span>
-                    <span class="status-item" id="statusMessage">Готов к работе</span>
+                    <span class="status-item" id="statusMessage" role="status" aria-live="polite">Готов к работе</span>
                 </div>
             </section>
         </main>
 
         <!-- Console Panel -->
-        <section class="console-panel">
+        <section class="console-panel" id="consolePanel">
             <div class="panel-header">
                 <h2>📋 Консоль</h2>
                 <button class="btn-icon" id="clearConsoleBtn" title="Очистить консоль">🗑️</button>
@@ -110,6 +110,7 @@
                 <div class="console-message info">🚗 Робот-садовник готов к работе!</div>
                 <div class="console-message hint">Задача: посадить цветы на всех грядках и вернуться на базу.</div>
             </div>
+            <div class="console-input" id="consoleInput" hidden></div>
         </section>
 
         <!-- Examples Modal -->

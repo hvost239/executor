@@ -45,7 +45,9 @@ class App {
             statusMessage: document.getElementById('statusMessage'),
 
             // Консоль
+            consolePanel: document.getElementById('consolePanel'),
             consoleOutput: document.getElementById('consoleOutput'),
+            consoleInput: document.getElementById('consoleInput'),
             clearConsoleBtn: document.getElementById('clearConsoleBtn'),
 
             // Редактор кода
@@ -119,7 +121,10 @@ class App {
 }`,
         };
 
-        this.programConsole = new ProgramConsole(this.elements.consoleOutput);
+        this.programConsole = new ProgramConsole(
+            this.elements.consoleOutput,
+            this.elements.consoleInput
+        );
         this.init();
     }
 
@@ -313,16 +318,16 @@ class App {
             else if (result.reason === 'incomplete') this.setStatus('Задача не решена', 'warning');
         };
 
-        this.interpreter.onStatusChange = (status) => {
-            if (status === 'running') {
+        this.interpreter.onStatusChange = (status, details) => {
+            const waiting = status === 'waiting-input';
+            this.elements.consolePanel.classList.toggle('waiting-input', waiting);
+            this.elements.runBtn.disabled = status === 'running' || waiting;
+            this.elements.stepBtn.disabled = status === 'running' || waiting;
+            if (waiting) {
+                this.setStatus(`Введите ${details.name} в консоли ↓`, 'waiting');
+            } else if (status === 'running') {
                 this.setStatus('Выполняется...', 'running');
-                this.elements.runBtn.disabled = true;
-                this.elements.stepBtn.disabled = true;
-            } else {
-                if (status === 'paused') this.setStatus('Пошаговое выполнение', 'ready');
-                this.elements.runBtn.disabled = false;
-                this.elements.stepBtn.disabled = false;
-            }
+            } else if (status === 'paused') this.setStatus('Пошаговое выполнение', 'ready');
         };
     }
 
@@ -437,6 +442,8 @@ class App {
             el.classList.add('error');
         } else if (type === 'running') {
             el.classList.add('running');
+        } else if (type === 'waiting') {
+            el.classList.add('waiting');
         }
     }
 

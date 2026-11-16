@@ -95,6 +95,8 @@ test('stop during animation cancels the session and permits a fresh run', async 
 });
 test('stop during pending input and restart cannot apply stale input', async () => {
     const f = controller();
+    const statuses = [];
+    f.interpreter.onStatusChange = (status) => statuses.push(status);
     let release;
     f.interpreter.onInput = () =>
         new Promise((resolve) => {
@@ -109,6 +111,34 @@ test('stop during pending input and restart cannot apply stale input', async () 
     await execution;
     assert.equal(f.output.join(''), '8\n');
     assert.equal(f.errors.length, 0);
+    assert.equal(statuses.at(-1), 'completed');
+});
+test('Run and Step distinguish waiting for input from execution and resume correctly', async () => {
+    for (const mode of ['execute', 'step']) {
+        const f = controller();
+        const statuses = [];
+        let submit;
+        f.interpreter.onStatusChange = (status, details) => statuses.push({ status, details });
+        f.interpreter.onInput = () =>
+            new Promise((resolve) => {
+                submit = resolve;
+            });
+        const source = 'main { int n; input n; println n; }';
+        if (mode === 'step') await f.interpreter.step(source); // Variable declaration.
+        const execution = f.interpreter[mode](source);
+        for (let i = 0; i < 20; i++) await Promise.resolve();
+        assert.deepEqual(statuses.at(-1), { status: 'waiting-input', details: { name: 'n' } });
+        assert.equal(f.interpreter.isRunning, true);
+        submit('7');
+        await execution;
+        if (mode === 'step') {
+            assert.equal(statuses.at(-1).status, 'paused');
+            await steps(f.interpreter, source);
+        }
+        assert.equal(statuses.at(-1).status, 'completed');
+        assert.equal(f.output.join(''), '7\n');
+        assert.equal(f.interpreter.isRunning, false);
+    }
 });
 test('stopping a computational loop yields back to the event loop', async () => {
     const f = controller();

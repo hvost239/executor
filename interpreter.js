@@ -76,10 +76,16 @@ export class Interpreter {
             case 'input':
                 if (!this.onInput)
                     throw new RobotRuntimeError('источник ввода не подключён', event.loc);
-                return withAbort(
-                    this.onInput({ name: event.name, dataType: event.dataType, signal }),
-                    signal
-                );
+                this.onStatusChange?.('waiting-input', { name: event.name });
+                try {
+                    return await withAbort(
+                        this.onInput({ name: event.name, dataType: event.dataType, signal }),
+                        signal
+                    );
+                } finally {
+                    if (this.session === session && !signal.aborted)
+                        this.onStatusChange?.('running');
+                }
             case 'graphics':
                 throw new RobotRuntimeError(
                     `команда «${event.name}» требует исполнителя Черепаха или Чертёжник`,

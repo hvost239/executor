@@ -104,6 +104,10 @@ test('console input submits a value, preserves output fragments and cancels on S
         await settle();
         let form = f.document.querySelector('.program-input');
         assert.ok(form);
+        assert.equal(form.parentElement, f.app.elements.consoleInput);
+        assert.equal(f.app.elements.consoleInput.hidden, false);
+        assert.equal(f.app.elements.consolePanel.classList.contains('waiting-input'), true);
+        assert.equal(f.app.elements.statusMessage.textContent, 'Введите n в консоли ↓');
         assert.equal(f.app.elements.runBtn.disabled, true);
         // Clearing diagnostics must not remove the pending input form.
         f.app.elements.clearConsoleBtn.click();
@@ -112,14 +116,57 @@ test('console input submits a value, preserves output fragments and cancels on S
         form.dispatchEvent(new f.window.Event('submit', { bubbles: true, cancelable: true }));
         await settle();
         assert.equal(f.document.querySelector('.program-output').textContent, '14\n');
+        assert.equal(f.app.elements.statusMessage.textContent, 'Выполнено!');
+        assert.equal(f.app.elements.consoleInput.hidden, true);
+        assert.equal(f.app.elements.consolePanel.classList.contains('waiting-input'), false);
         f.app.elements.runBtn.click();
         await settle();
         assert.ok(f.document.querySelector('.program-input'));
         f.app.elements.stopBtn.click();
         await settle();
         assert.equal(f.document.querySelector('.program-input'), null);
+        assert.equal(f.app.elements.consoleInput.hidden, true);
+        assert.equal(f.app.elements.consolePanel.classList.contains('waiting-input'), false);
         assert.equal(f.app.elements.runBtn.disabled, false);
         assert.equal(f.app.elements.statusMessage.textContent, 'Остановлено');
+    } finally {
+        await f.close();
+    }
+});
+test('the Russian input example prompts for both numbers and finishes after submission', async () => {
+    const f = await openApp();
+    try {
+        f.app.elements.codeEditor.value = `ПроверкаВвода {
+            целые a, b;
+            вывод "Введите первое число: ";
+            ввод a;
+            вывод "Введите второе число: ";
+            ввод b;
+            выводстр "Сумма: ", a + b;
+            выводстр "Произведение: ", a * b;
+        }`;
+        f.app.elements.runBtn.click();
+        for (const [name, value] of [
+            ['a', '7'],
+            ['b', '5'],
+        ]) {
+            await settle();
+            assert.equal(f.app.elements.statusMessage.textContent, `Введите ${name} в консоли ↓`);
+            assert.equal(f.app.elements.stepBtn.disabled, true);
+            const form = f.app.elements.consoleInput.querySelector('form');
+            const input = form.querySelector('input');
+            assert.equal(f.document.activeElement, input);
+            input.value = value;
+            form.dispatchEvent(new f.window.Event('submit', { bubbles: true, cancelable: true }));
+        }
+        await settle();
+        assert.match(
+            f.document.querySelector('.program-output').textContent,
+            /Сумма: 12\nПроизведение: 35\n$/
+        );
+        assert.equal(f.app.elements.statusMessage.textContent, 'Выполнено!');
+        assert.equal(f.app.elements.runBtn.disabled, false);
+        assert.equal(f.app.elements.consoleInput.hidden, true);
     } finally {
         await f.close();
     }

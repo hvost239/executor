@@ -2,6 +2,8 @@ import { Field, Robot, FieldRenderer } from './robot.js';
 import { Interpreter } from './interpreter.js';
 import { parseMaze } from './maze.js';
 import { ProgramConsole } from './ui/program-console.js';
+import { formatCode } from './language/formatter.js';
+import { diagnostic } from './language/errors.js';
 
 /**
  * Исполнители — Главный модуль приложения
@@ -50,6 +52,7 @@ class App {
 
             // Редактор кода
             clearCodeBtn: document.getElementById('clearCodeBtn'),
+            formatCodeBtn: document.getElementById('formatCodeBtn'),
             loadExampleBtn: document.getElementById('loadExampleBtn'),
 
             // Модальные окна
@@ -194,6 +197,7 @@ class App {
         });
 
         // Кнопки редактора
+        elements.formatCodeBtn.addEventListener('click', () => this.formatEditor());
         elements.clearCodeBtn.addEventListener('click', () => {
             if (confirm('Очистить код?')) {
                 elements.codeEditor.value = '';
@@ -314,6 +318,7 @@ class App {
         };
 
         this.interpreter.onStatusChange = (status) => {
+            this.elements.formatCodeBtn.disabled = this.interpreter.isRunning;
             if (status === 'running') {
                 this.setStatus('Выполняется...', 'running');
                 this.elements.runBtn.disabled = true;
@@ -327,6 +332,27 @@ class App {
     }
 
     // Управление выполнением
+    formatEditor() {
+        if (this.interpreter.isRunning) return;
+        const editor = this.elements.codeEditor;
+        if (!editor.value.trim()) return;
+        try {
+            const formatted = formatCode(editor.value);
+            if (formatted === editor.value) return;
+            if (this.interpreter.session) this.stop();
+            editor.value = formatted;
+            this.updateLineNumbers();
+            this.clearHighlight();
+            editor.focus();
+            editor.setSelectionRange(0, 0);
+            editor.scrollTop = 0;
+            this.elements.lineNumbers.scrollTop = 0;
+            this.log('Код отформатирован', 'info');
+        } catch (error) {
+            this.log(`Не удалось отформатировать код: ${diagnostic(error)}`, 'error');
+        }
+    }
+
     run() {
         const code = this.elements.codeEditor.value;
         if (!code.trim()) {
@@ -372,6 +398,11 @@ class App {
 
     // Горячие клавиши
     handleHotkeys(e) {
+        if (e.altKey && e.shiftKey && e.code === 'KeyF') {
+            e.preventDefault();
+            this.formatEditor();
+            return;
+        }
         // F5 - запуск
         if (e.key === 'F5') {
             e.preventDefault();

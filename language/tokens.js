@@ -76,12 +76,12 @@ const Space = createToken({
 const LineComment = createToken({
     name: 'LineComment',
     pattern: /\/\/[^\r\n]*/,
-    group: Lexer.SKIPPED,
+    group: 'comments',
 });
 const BlockComment = createToken({
     name: 'BlockComment',
     pattern: /\/\*[\s\S]*?\*\//,
-    group: Lexer.SKIPPED,
+    group: 'comments',
     line_breaks: true,
 });
 export const allTokens = [

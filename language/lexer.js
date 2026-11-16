@@ -14,8 +14,8 @@ export function decodeString(token) {
 const engine = new ChevrotainLexer(allTokens);
 /** Public lexer boundary: invalid characters are errors, never silently discarded. */
 export class Lexer {
-    tokenize(source) {
-        const { tokens, errors } = engine.tokenize(source);
+    tokenize(source, { includeComments = false } = {}) {
+        const { tokens, errors, groups } = engine.tokenize(source);
         if (errors.length) {
             const error = errors[0];
             throw new RobotSyntaxError(
@@ -28,6 +28,8 @@ export class Lexer {
             if (token.tokenType === NumberLiteral && !Number.isFinite(Number(token.image)))
                 throw new RobotSyntaxError('число слишком велико', location(token));
         }
-        return tokens;
+        return includeComments
+            ? [...tokens, ...groups.comments].sort((a, b) => a.startOffset - b.startOffset)
+            : tokens;
     }
 }

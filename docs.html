@@ -1,0 +1,866 @@
+<!doctype html>
+<html lang="ru" class="docs-page">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta
+            name="description"
+            content="Команды Робота, синтаксис языка и примеры программ в браузерной среде «Исполнители» по мотивам работы К. Ю. Полякова."
+        />
+        <title>Справочник команд — Исполнители</title>
+        <link rel="stylesheet" href="styles.css" />
+        <link rel="stylesheet" href="docs.css" />
+    </head>
+    <body>
+        <a class="skip-link" href="#documentation">К содержанию справочника</a>
+        <header class="docs-header">
+            <a class="docs-brand" href="index.html"
+                ><span aria-hidden="true">🤖</span> Исполнители</a
+            >
+            <a class="btn btn-ghost" href="index.html">← К редактору</a>
+        </header>
+
+        <div class="docs-layout">
+            <aside class="docs-sidebar">
+                <nav aria-label="Разделы справочника">
+                    <p class="docs-eyebrow">На этой странице</p>
+                    <ol>
+                        <li><a href="#start">Первая программа</a></li>
+                        <li><a href="#robot">Команды Робота</a></li>
+                        <li><a href="#sensors">Датчики и условия</a></li>
+                        <li><a href="#control">Ветвления и циклы</a></li>
+                        <li><a href="#values">Переменные и операции</a></li>
+                        <li><a href="#io">Ввод и вывод</a></li>
+                        <li><a href="#procedures">Процедуры и функции</a></li>
+                        <li><a href="#arrays">Массивы и строки</a></li>
+                        <li><a href="#math">Математические функции</a></li>
+                        <li><a href="#strings">Функции для строк</a></li>
+                        <li><a href="#workspace">Поле и управление</a></li>
+                        <li><a href="#compatibility">Возможности версии</a></li>
+                        <li><a href="#credits">Автор оригинала</a></li>
+                    </ol>
+                </nav>
+                <p class="docs-search-hint">
+                    Найти команду на странице:<br /><kbd>Ctrl</kbd> / <kbd>⌘</kbd> + <kbd>F</kbd>
+                </p>
+            </aside>
+
+            <main id="documentation" class="docs-content">
+                <div class="docs-intro">
+                    <p class="docs-eyebrow">Язык программирования · Робот-садовник</p>
+                    <h1>Справочник команд</h1>
+                    <p class="docs-lead">
+                        От первой программы до циклов, функций и массивов. Русские и английские
+                        варианты команд можно использовать в одной программе.
+                    </p>
+                    <p>
+                        Браузерная среда создана по мотивам «Исполнителей» К. Ю. Полякова.
+                        <a href="#credits">Об оригинале и благодарность автору →</a>
+                    </p>
+                </div>
+
+                <section id="start" aria-labelledby="start-title">
+                    <h2 id="start-title">01. Первая программа</h2>
+                    <p>
+                        Укажите имя программы, затем запишите команды внутри фигурных скобок. После
+                        команды ставьте точку с запятой. Скопируйте пример в редактор и нажмите
+                        «Выполнить».
+                    </p>
+                    <pre><code data-program="hello">Приветствие
+{
+    выводстр "Привет, мир!";
+}</code></pre>
+                    <p>
+                        Текст появится в консоли под редактором. Для вычислительных программ
+                        лабиринт не нужен. После имени программы можно поставить пустые скобки:
+                        <code>Приветствие()</code>.
+                    </p>
+                    <p>
+                        Комментарии <code>// до конца строки</code> и
+                        <code>/* на нескольких строках */</code> не выполняются.
+                    </p>
+                </section>
+
+                <section id="robot" aria-labelledby="robot-title">
+                    <h2 id="robot-title">02. Команды Робота</h2>
+                    <p>
+                        Робот перемещается по клеткам и сажает цветы на грядках. Стены и засаженные
+                        клумбы закрывают путь. Цель задачи — засадить все грядки и закончить
+                        программу на базе.
+                    </p>
+                    <div
+                        class="docs-table"
+                        tabindex="0"
+                        role="region"
+                        aria-label="Команды движения и посадки"
+                    >
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th scope="col">Команда</th>
+                                    <th scope="col">Английский вариант</th>
+                                    <th scope="col">Действие</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><code>вперед(n);</code></td>
+                                    <td><code>forward(n);</code></td>
+                                    <td>Пройти <code>n</code> клеток в направлении взгляда.</td>
+                                </tr>
+                                <tr>
+                                    <td><code>назад(n);</code></td>
+                                    <td><code>backward(n);</code></td>
+                                    <td>
+                                        Пройти <code>n</code> клеток назад, сохранив направление
+                                        взгляда.
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><code>налево;</code></td>
+                                    <td><code>left;</code></td>
+                                    <td>Повернуться на 90° влево.</td>
+                                </tr>
+                                <tr>
+                                    <td><code>направо;</code></td>
+                                    <td><code>right;</code></td>
+                                    <td>Повернуться на 90° вправо.</td>
+                                </tr>
+                                <tr>
+                                    <td><code>кругом;</code></td>
+                                    <td><code>around;</code></td>
+                                    <td>Развернуться на 180°.</td>
+                                </tr>
+                                <tr>
+                                    <td><code>посади;</code></td>
+                                    <td><code>paint;</code></td>
+                                    <td>Посадить цветы на текущей незасаженной грядке.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <p>
+                        Число шагов должно быть целым и неотрицательным. Можно передать выражение:
+                        <code>вперед(2 + n);</code>. У команд без аргументов допустимы пустые
+                        скобки: <code>направо();</code>.
+                    </p>
+                    <details>
+                        <summary>Дополнительные названия команд</summary>
+                        <p>
+                            <code>вперёд</code> означает <code>вперед</code>, <code>back</code> —
+                            <code>назад</code>, <code>влево</code> и <code>вправо</code> — поворот
+                            без аргументов, <code>turnaround</code> — <code>кругом</code>. Названия
+                            <code>посадить</code>, <code>закрасить</code> и <code>закрась</code> без
+                            аргументов означают <code>посади</code>.
+                        </p>
+                    </details>
+                    <h3>Пример с готовым лабиринтом</h3>
+                    <p>
+                        Сохраните эти три строки в файл <code>example.maz</code> и загрузите его
+                        кнопкой 📥 над полем. Робот смотрит вправо, рядом находятся грядка и база.
+                    </p>
+                    <pre><code>wwwww
+w2xbw
+wwwww</code></pre>
+                    <pre><code data-program="plant">Посадка
+{
+    вперед(1);
+    посади;
+    вперед(1);
+}</code></pre>
+                </section>
+
+                <section id="sensors" aria-labelledby="sensors-title">
+                    <h2 id="sensors-title">03. Датчики и условия</h2>
+                    <p>
+                        Датчик возвращает <code>истина</code> или <code>ложь</code>. Направления
+                        «впереди», «сзади», «слева» и «справа» отсчитываются от направления взгляда
+                        Робота.
+                    </p>
+                    <div class="docs-table" tabindex="0" role="region" aria-label="Датчики Робота">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th scope="col">Датчики</th>
+                                    <th scope="col">Что проверяют</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>
+                                        <code>впереди_стена</code>, <code>сзади_стена</code>,
+                                        <code>слева_стена</code>, <code>справа_стена</code>
+                                    </td>
+                                    <td>Есть ли рядом стена или граница поля.</td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <code>впереди_клумба</code>, <code>сзади_клумба</code>,
+                                        <code>слева_клумба</code>, <code>справа_клумба</code>
+                                    </td>
+                                    <td>Есть ли рядом уже засаженная клумба.</td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <code>впереди_свободно</code>, <code>сзади_свободно</code>,
+                                        <code>слева_свободно</code>, <code>справа_свободно</code>
+                                    </td>
+                                    <td>
+                                        Можно ли перейти в соседнюю клетку: там нет стены и
+                                        засаженной клумбы.
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><code>грядка</code></td>
+                                    <td>Стоит ли Робот на грядке, где ещё нет цветов.</td>
+                                </tr>
+                                <tr>
+                                    <td><code>база</code></td>
+                                    <td>Стоит ли Робот на базе.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <p>
+                        После <code>посади</code> датчик <code>грядка</code> в этой клетке
+                        становится ложным. Условия можно объединять:
+                        <code>впереди_свободно и не база</code>.
+                    </p>
+                    <details>
+                        <summary>Дополнительные названия датчиков</summary>
+                        <p>
+                            Допустим обратный порядок слов: <code>стена_впереди</code>,
+                            <code>клумба_справа</code>, <code>свободно_слева</code> — и так для
+                            каждой стороны. Датчик <code>грядка</code> также называется
+                            <code>на_грядке</code>, <code>на_цели</code> или <code>цель</code>;
+                            <code>база</code> — <code>на_базе</code>. Дополнительный датчик
+                            <code>клетка_закрашена</code> проверяет цветы в текущей клетке.
+                        </p>
+                    </details>
+                </section>
+
+                <section id="control" aria-labelledby="control-title">
+                    <h2 id="control-title">04. Ветвления и циклы</h2>
+                    <div
+                        class="docs-table"
+                        tabindex="0"
+                        role="region"
+                        aria-label="Управляющие конструкции языка"
+                    >
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th scope="col">Конструкция</th>
+                                    <th scope="col">Назначение</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>
+                                        <code>если (условие) { … } иначе { … }</code><br /><code
+                                            >if / else</code
+                                        >
+                                    </td>
+                                    <td>
+                                        Выбрать действия по условию. Ветку <code>иначе</code> можно
+                                        опустить.
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><code>повтори (n) { … }</code><br /><code>repeat</code></td>
+                                    <td>
+                                        Выполнить тело <code>n</code> раз. Число повторений
+                                        вычисляется один раз.
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <code>пока (условие) { … }</code><br /><code>while</code>
+                                    </td>
+                                    <td>Перед каждым повторением проверять условие.</td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <code>цикл (i = 0; i &lt; n; i = i + 1) { … }</code
+                                        ><br /><code>for</code>
+                                    </td>
+                                    <td>
+                                        Задать начальное значение, условие и изменение счётчика.
+                                        Объявите <code>i</code> перед циклом.
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><code>прервать;</code> / <code>break;</code></td>
+                                    <td>Выйти из ближайшего цикла.</td>
+                                </tr>
+                                <tr>
+                                    <td><code>продолжить;</code> / <code>continue;</code></td>
+                                    <td>
+                                        Перейти к следующему повторению. В <code>цикл</code> сначала
+                                        выполняется изменение счётчика.
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <pre><code data-program="loop">Квадраты
+{
+    целые i;
+    цикл (i = 1; i &lt;= 5; i = i + 1) {
+        если (i == 3) продолжить;
+        выводстр i, " в квадрате = ", i * i;
+    }
+}</code></pre>
+                    <p>
+                        Конструкции можно вкладывать друг в друга. Если тело состоит из одной
+                        команды, фигурные скобки необязательны.
+                    </p>
+                </section>
+
+                <section id="values" aria-labelledby="values-title">
+                    <h2 id="values-title">05. Переменные и операции</h2>
+                    <p>
+                        Перед использованием объявите переменную: <code>целые n = 5;</code>. Можно
+                        объявить несколько сразу: <code>целые a, b;</code>. Глобальные переменные
+                        записываются перед всеми процедурами, локальные — внутри них.
+                    </p>
+                    <div class="docs-table" tabindex="0" role="region" aria-label="Типы данных">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th scope="col">Тип</th>
+                                    <th scope="col">Пример</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><code>целые</code> / <code>int</code></td>
+                                    <td><code>целые шаги = 3;</code></td>
+                                </tr>
+                                <tr>
+                                    <td><code>дробные</code> / <code>float</code></td>
+                                    <td>
+                                        <code>дробные длинаСтороны = 2.5;</code> — дробная часть
+                                        отделяется точкой.
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><code>символы</code> / <code>char</code></td>
+                                    <td><code>символы буква = 'А';</code></td>
+                                </tr>
+                                <tr>
+                                    <td><code>логические</code> / <code>logical</code></td>
+                                    <td>
+                                        <code>логические готово = истина;</code> Значения:
+                                        <code>истина / true</code>, <code>ложь / false</code>.
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="docs-table" tabindex="0" role="region" aria-label="Операции языка">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th scope="col">Операции</th>
+                                    <th scope="col">Обозначения</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Присваивание</td>
+                                    <td>
+                                        <code>=</code> или <code>:=</code>: <code>n = n + 1;</code>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>Арифметика</td>
+                                    <td>
+                                        <code>+ − * / % ^</code>. В коде минус — <code>-</code>;
+                                        <code>%</code> — остаток, <code>^</code> — степень.
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>Сравнение</td>
+                                    <td>
+                                        <code>== != &lt;&gt; &lt; &lt;= &gt; &gt;=</code>. Равенство
+                                        проверяют через <code>==</code>, неравенство — через
+                                        <code>!=</code> или <code>&lt;&gt;</code>.
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>Логическое НЕ</td>
+                                    <td><code>не</code>, <code>not</code>, <code>!</code></td>
+                                </tr>
+                                <tr>
+                                    <td>Логическое И</td>
+                                    <td><code>и</code>, <code>and</code>, <code>&amp;</code></td>
+                                </tr>
+                                <tr>
+                                    <td>Логическое ИЛИ</td>
+                                    <td><code>или</code>, <code>or</code>, <code>|</code></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <p>
+                        При делении двух целых дробная часть отбрасывается: <code>7 / 2</code> даёт
+                        <code>3</code>, а <code>7.0 / 2</code> — <code>3.5</code>. Используйте
+                        скобки, чтобы явно задать порядок вычислений: <code>(a + b) * 2</code>.
+                    </p>
+                </section>
+
+                <section id="io" aria-labelledby="io-title">
+                    <h2 id="io-title">06. Ввод и вывод</h2>
+                    <p>
+                        Команда <code>ввод</code> показывает поле в консоли. Введите значение и
+                        нажмите Enter. При вводе нескольких переменных приложение запросит каждое
+                        значение отдельно.
+                    </p>
+                    <div
+                        class="docs-table"
+                        tabindex="0"
+                        role="region"
+                        aria-label="Команды ввода и вывода"
+                    >
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th scope="col">Команда</th>
+                                    <th scope="col">Действие</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><code>ввод a, b;</code> / <code>input a, b;</code></td>
+                                    <td>
+                                        Прочитать значения переменных, элементов массива или целой
+                                        строки.
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <code>вывод "Ответ: ", n;</code><br /><code>print</code>,
+                                        <code>печать</code>
+                                    </td>
+                                    <td>Вывести значения без перехода на новую строку.</td>
+                                </tr>
+                                <tr>
+                                    <td><code>выводстр n;</code> / <code>println n;</code></td>
+                                    <td>Вывести значения и перейти на новую строку.</td>
+                                </tr>
+                                <tr>
+                                    <td><code>cin &gt;&gt; a &gt;&gt; b;</code></td>
+                                    <td>Альтернативная запись ввода.</td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <code>cout &lt;&lt; "Ответ: " &lt;&lt; n;</code><br /><code
+                                            >coutln &lt;&lt; n;</code
+                                        >
+                                    </td>
+                                    <td>
+                                        Альтернативная запись вывода. <code>coutln</code> добавляет
+                                        новую строку.
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><code>очистить;</code> / <code>clrscr;</code></td>
+                                    <td>Очистить вывод программы в консоли.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <pre><code data-program="input">СуммаЧисел
+{
+    целые a, b;
+    вывод "Первое число: ";
+    ввод a;
+    вывод "Второе число: ";
+    ввод b;
+    выводстр "Сумма: ", a + b;
+}</code></pre>
+                    <p>
+                        Для ввода <code>7</code> и <code>5</code> результат —
+                        <code>Сумма: 12</code>. Пробелы между значениями не добавляются
+                        автоматически: включайте их в строку, как в примере.
+                    </p>
+                    <p>
+                        Формат вывода: <code>значение:ширина:точность</code>. Например,
+                        <code>выводстр pi:0:2;</code> печатает <code>3.14</code>, а
+                        <code>выводстр 7:4;</code> дополняет число пробелами слева до ширины 4.
+                    </p>
+                </section>
+
+                <section id="procedures" aria-labelledby="procedures-title">
+                    <h2 id="procedures-title">07. Процедуры и функции</h2>
+                    <p>
+                        Первой идёт главная процедура без параметров и типа результата. Ниже можно
+                        объявлять свои процедуры и функции. Процедура выполняет действия, функция
+                        возвращает значение указанного типа.
+                    </p>
+                    <pre><code data-program="function">Основная
+{
+    выводстр "Квадрат числа 6: ", Квадрат(6);
+    Привет();
+}
+
+целые Квадрат(целые x)
+{
+    возврат x * x;
+}
+
+Привет()
+{
+    выводстр "Готово!";
+}</code></pre>
+                    <p>
+                        <code>возврат значение;</code> / <code>return значение;</code> завершает
+                        функцию. В процедуре используется <code>возврат;</code> без значения.
+                        Разрешены вызовы функций, объявленных ниже, и рекурсия.
+                    </p>
+                    <p>
+                        Параметры передаются по значению: изменение параметра внутри процедуры не
+                        меняет исходную переменную. Это относится и к массивам.
+                    </p>
+                </section>
+
+                <section id="arrays" aria-labelledby="arrays-title">
+                    <h2 id="arrays-title">08. Массивы и строки</h2>
+                    <p>
+                        Одномерный массив объявляется как <code>целые a[5];</code>, матрица — как
+                        <code>целые m[2][3];</code>. Индексы начинаются с нуля: у массива длины 5
+                        есть элементы от <code>a[0]</code> до <code>a[4]</code>.
+                    </p>
+                    <pre><code data-program="array">МассивКвадратов
+{
+    целые a[5], i;
+    цикл (i = 0; i &lt; 5; i = i + 1) {
+        a[i] = i * i;
+        выводстр a[i];
+    }
+}</code></pre>
+                    <p>
+                        Строка хранится в массиве символов: <code>символы s[40];</code>. Ей можно
+                        присвоить текст, ввести его через <code>ввод s;</code> или объединить строки
+                        знаком <code>+</code>. Текст должен помещаться в массив.
+                    </p>
+                    <pre><code data-program="string">Строка
+{
+    символы s[40];
+    s = "Привет" + ", Робот!";
+    выводстр s;
+    выводстр "Длина: ", длина(s);
+}</code></pre>
+                    <p>
+                        Строки заключаются в одинарные или двойные кавычки. Для кавычек внутри
+                        текста используйте другой вид снаружи: <code>'Он сказал "Привет"'</code>.
+                        Обратная косая черта — обычный символ; для переноса строки используйте
+                        <code>выводстр</code>.
+                    </p>
+                </section>
+
+                <section id="math" aria-labelledby="math-title">
+                    <h2 id="math-title">09. Математические функции</h2>
+                    <p>
+                        Функции можно использовать в выражениях:
+                        <code>дробные x = sqrt(25) + abs(-3);</code>.
+                    </p>
+                    <div
+                        class="docs-table"
+                        tabindex="0"
+                        role="region"
+                        aria-label="Математические функции"
+                    >
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th scope="col">Функция</th>
+                                    <th scope="col">Результат</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><code>pi</code> или <code>pi()</code></td>
+                                    <td>Число π.</td>
+                                </tr>
+                                <tr>
+                                    <td><code>sqrt(x)</code>, <code>abs(x)</code></td>
+                                    <td>Квадратный корень и модуль.</td>
+                                </tr>
+                                <tr>
+                                    <td><code>trunc(x)</code></td>
+                                    <td>Целая часть с отбрасыванием дробной к нулю.</td>
+                                </tr>
+                                <tr>
+                                    <td><code>round(x)</code></td>
+                                    <td>
+                                        Округление до ближайшего целого; при равном расстоянии — к
+                                        большему числу.
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><code>sign(x)</code></td>
+                                    <td>Знак числа: −1, 0 или 1.</td>
+                                </tr>
+                                <tr>
+                                    <td><code>random()</code>, <code>random(n)</code></td>
+                                    <td>
+                                        Без аргумента — число от 0 включительно до 1 исключительно.
+                                        С положительным целым <code>n</code> — целое от 0 до
+                                        <code>n − 1</code>.
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <code>sin(x)</code>, <code>cos(x)</code>,
+                                        <code>tan(x)</code>
+                                    </td>
+                                    <td>Синус, косинус, тангенс угла в радианах.</td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <code>sing(x)</code>, <code>cosg(x)</code>,
+                                        <code>tang(x)</code>
+                                    </td>
+                                    <td>Те же функции для угла в градусах.</td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <code>arcsin(x)</code>, <code>arccos(x)</code>,
+                                        <code>arctan(x)</code>
+                                    </td>
+                                    <td>
+                                        Обратные тригонометрические функции; результат в радианах.
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <code>arcsing(x)</code>, <code>arccosg(x)</code>,
+                                        <code>arctang(x)</code>
+                                    </td>
+                                    <td>
+                                        Обратные тригонометрические функции; результат в градусах.
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><code>arctan2(y, x)</code>, <code>arctan2g(y, x)</code></td>
+                                    <td>
+                                        Угол направления на точку <code>(x, y)</code> с учётом
+                                        четверти: в радианах или градусах.
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <code>exp(x)</code>, <code>ln(x)</code>, <code>lg(x)</code>
+                                    </td>
+                                    <td>
+                                        Число e в степени <code>x</code>, натуральный и десятичный
+                                        логарифмы.
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><code>RGB(r, g, b)</code></td>
+                                    <td>
+                                        Числовой код цвета; каждая компонента — целое от 0 до 255.
+                                        Сам по себе ничего не рисует.
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <section id="strings" aria-labelledby="strings-title">
+                    <h2 id="strings-title">10. Функции для строк</h2>
+                    <p>
+                        Позиции символов отсчитываются от нуля. Функции изменения строки возвращают
+                        новую строку — присвойте результат переменной.
+                    </p>
+                    <div
+                        class="docs-table"
+                        tabindex="0"
+                        role="region"
+                        aria-label="Функции обработки строк"
+                    >
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th scope="col">Функция</th>
+                                    <th scope="col">Действие</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><code>длина(s)</code> / <code>length(s)</code></td>
+                                    <td>Число символов в строке.</td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <code>фрагмент(s, i, n)</code> / <code>copy(s, i, n)</code>
+                                    </td>
+                                    <td>
+                                        Взять до <code>n</code> символов, начиная с позиции
+                                        <code>i</code>.
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <code>позиция(часть, s)</code> / <code>pos(часть, s)</code>
+                                    </td>
+                                    <td>
+                                        Позиция первого вхождения; <code>-1</code>, если подстрока
+                                        не найдена.
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <code>вставить(часть, s, i)</code> /
+                                        <code>insert(часть, s, i)</code>
+                                    </td>
+                                    <td>Вставить подстроку перед позицией <code>i</code>.</td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <code>удалить(s, i, n)</code> / <code>delete(s, i, n)</code>
+                                    </td>
+                                    <td>
+                                        Удалить до <code>n</code> символов с позиции <code>i</code>.
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <pre><code data-program="string-functions">РаботаСоСтрокой
+{
+    символы s[40];
+    s = "Робот";
+    s = вставить("Привет, ", s, 0);
+    выводстр s;
+    выводстр фрагмент(s, 8, 5);
+}</code></pre>
+                </section>
+
+                <section id="workspace" aria-labelledby="workspace-title">
+                    <h2 id="workspace-title">11. Поле и управление</h2>
+                    <p>
+                        📥 загружает лабиринт из файла <code>.maz</code> или <code>.txt</code>.
+                        Кнопка ✏️ открывает редактор стен, грядок, базы и начальной позиции Робота.
+                        Кнопка 📂 над кодом открывает примеры программ.
+                    </p>
+                    <div
+                        class="docs-table"
+                        tabindex="0"
+                        role="region"
+                        aria-label="Символы файла лабиринта"
+                    >
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th scope="col">Символ</th>
+                                    <th scope="col">Клетка лабиринта</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><code>.</code></td>
+                                    <td>Пустая клетка.</td>
+                                </tr>
+                                <tr>
+                                    <td><code>w</code>, <code>W</code></td>
+                                    <td>Стена.</td>
+                                </tr>
+                                <tr>
+                                    <td><code>x</code></td>
+                                    <td>Грядка.</td>
+                                </tr>
+                                <tr>
+                                    <td><code>b</code></td>
+                                    <td>База.</td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <code>0</code>, <code>2</code>, <code>4</code>,
+                                        <code>6</code>
+                                    </td>
+                                    <td>
+                                        Робот смотрит вверх, вправо, вниз или влево соответственно.
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><code>X</code>, <code>B</code></td>
+                                    <td>Робот на грядке или на базе, смотрит вверх.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <p>
+                        Каждая строка файла — ряд клеток. Не указывайте несколько начальных позиций
+                        Робота.
+                    </p>
+                    <ul>
+                        <li><kbd>F5</kbd> — выполнить или продолжить программу.</li>
+                        <li><kbd>F10</kbd> — выполнить один шаг.</li>
+                        <li><kbd>Esc</kbd> — остановить выполнение, в том числе ожидание ввода.</li>
+                        <li>
+                            Кнопка «Сброс» или <kbd>Ctrl</kbd> + <kbd>R</kbd> — вернуть исходное
+                            состояние поля.
+                        </li>
+                    </ul>
+                </section>
+
+                <section id="compatibility" aria-labelledby="compatibility-title">
+                    <h2 id="compatibility-title">12. Возможности этой версии</h2>
+                    <div class="docs-note">
+                        <p>
+                            Здесь работают Робот-садовник и вычислительные программы с вводом и
+                            выводом. Черепаха, Чертёжник и графический экран пока не реализованы: их
+                            команды при выполнении сообщат об ошибке.
+                        </p>
+                    </div>
+                    <p>
+                        В этой версии массив может содержать до 10 000 элементов и иметь не более
+                        двух измерений. Для защиты от бесконечного выполнения установлены пределы: 1
+                        000 000 шагов и 256 вложенных вызовов.
+                    </p>
+                    <p>
+                        Для прежних программ поддерживаются запись <code>повтори 4 раз</code>,
+                        условия без скобок и необязательные точки с запятой. В новых программах
+                        используйте оформление из примеров выше.
+                    </p>
+                </section>
+
+                <section id="credits" class="docs-credits" aria-labelledby="credits-title">
+                    <p class="docs-eyebrow">Идея и методика</p>
+                    <h2 id="credits-title">Спасибо автору оригинала</h2>
+                    <p>
+                        Благодарим <strong>Константина Юрьевича Полякова</strong> за учебную среду
+                        «Исполнители» и методические материалы по обучению программированию. Его
+                        работа стала основой идеи этой браузерной реализации.
+                    </p>
+                    <p>
+                        Эта страница описывает возможности нашего проекта. Оригинальная среда и
+                        авторские учебные материалы доступны на сайте К. Ю. Полякова:
+                    </p>
+                    <ul>
+                        <li>
+                            <a href="https://kpolyakov.spb.ru/school/robots/robots.htm"
+                                >Учебная среда «Исполнители»</a
+                            >
+                        </li>
+                        <li>
+                            <a href="https://kpolyakov.spb.ru/school/robots/methodic.htm"
+                                >Методика обучения и материалы автора</a
+                            >
+                        </li>
+                        <li><a href="https://kpolyakov.spb.ru/">Сайт Константина Полякова</a></li>
+                    </ul>
+                </section>
+                <footer class="docs-footer">
+                    <a href="#documentation">К началу справочника ↑</a
+                    ><a href="index.html">Перейти к редактору →</a>
+                </footer>
+            </main>
+        </div>
+    </body>
+</html>

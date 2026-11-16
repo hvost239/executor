@@ -91,8 +91,10 @@ body {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    height: var(--header-height);
-    padding: 0 24px;
+    min-height: var(--header-height);
+    flex-shrink: 0;
+    gap: 16px;
+    padding: 12px 24px;
     background: var(--bg-dark);
     border-bottom: 1px solid var(--bg-light);
     box-shadow: var(--shadow-md);
@@ -101,6 +103,7 @@ body {
 
 .logo {
     display: flex;
+    flex-shrink: 0;
     align-items: center;
     gap: 12px;
 }
@@ -144,6 +147,7 @@ body {
     font-family: inherit;
     font-size: 14px;
     font-weight: 600;
+    text-decoration: none;
     cursor: pointer;
     transition: all var(--transition-fast);
     position: relative;

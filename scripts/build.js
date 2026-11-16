@@ -11,7 +11,9 @@ await build({
     sourcemap: true,
     legalComments: 'eof',
 });
-await copyFile('styles.css', 'dist/styles.css');
+await Promise.all(
+    ['styles.css', 'docs.html', 'docs.css'].map((file) => copyFile(file, `dist/${file}`))
+);
 // The root page uses dist/bundle.js; the portable distribution keeps it beside the HTML.
 const html = await readFile('index.html', 'utf8');
 await writeFile('dist/index.html', html.replace('src="dist/bundle.js"', 'src="bundle.js"'));

@@ -43,6 +43,58 @@ async function settle() {
     for (let i = 0; i < 20; i++) await Promise.resolve();
 }
 
+test('Format button and keyboard shortcut update the editor and line numbers', async () => {
+    const f = await openApp();
+    try {
+        const editor = f.app.elements.codeEditor;
+        editor.value = 'main{println "Привет";}';
+        f.app.elements.formatCodeBtn.click();
+        assert.equal(editor.value, 'main {\n    println "Привет";\n}\n');
+        assert.equal(f.app.elements.lineNumbers.children.length, 4);
+        assert.equal(f.document.activeElement, editor);
+        editor.value = 'main{println 1+2;}';
+        editor.dispatchEvent(
+            new f.window.KeyboardEvent('keydown', {
+                key: 'F',
+                code: 'KeyF',
+                altKey: true,
+                shiftKey: true,
+                bubbles: true,
+                cancelable: true,
+            })
+        );
+        assert.equal(editor.value, 'main {\n    println 1 + 2;\n}\n');
+        f.app.elements.runBtn.click();
+        await settle();
+        assert.equal(f.document.querySelector('.program-output').textContent, '3\n');
+    } finally {
+        await f.close();
+    }
+});
+test('Format preserves invalid text and cannot modify an active program', async () => {
+    const f = await openApp();
+    try {
+        const editor = f.app.elements.codeEditor;
+        editor.value = 'main { println "not closed';
+        f.app.elements.formatCodeBtn.click();
+        assert.equal(editor.value, 'main { println "not closed');
+        assert.match(f.app.elements.consoleOutput.textContent, /Не удалось отформатировать/);
+        editor.value = 'main{int x;input x;}';
+        f.app.elements.runBtn.click();
+        await settle();
+        assert.equal(f.app.elements.formatCodeBtn.disabled, true);
+        f.app.formatEditor();
+        assert.equal(editor.value, 'main{int x;input x;}');
+        f.app.elements.stopBtn.click();
+        await settle();
+        assert.equal(f.app.elements.formatCodeBtn.disabled, false);
+        f.app.elements.formatCodeBtn.click();
+        assert.equal(editor.value, 'main {\n    int x;\n    input x;\n}\n');
+    } finally {
+        await f.close();
+    }
+});
+
 test('offline bundle initializes through the actual HTML and runs through the Run button', async () => {
     const f = await openApp();
     try {

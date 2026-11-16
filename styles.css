@@ -329,6 +329,10 @@ body {
     gap: 8px;
 }
 
+.editor-panel .panel-header { flex-wrap: wrap; gap: 8px; }
+.btn-format { min-height: 36px; padding: 8px 12px; font-size: 12px; }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
 .panel-actions select {
     padding: 6px 12px;
     background: var(--bg-light);

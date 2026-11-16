@@ -24,14 +24,19 @@ test('formatter indents blocks and spaces expressions while preserving for heade
     const formatted = formatCode(source);
     assert.equal(
         formatted,
-        `main {
+        `main
+{
     int i;
-    for (i = 0; i < 3; i = i + 1) {
+    for (i = 0; i < 3; i = i + 1)
+    {
         println -i;
     }
-    if (i == 3) {
+    if (i == 3)
+    {
         println "ok";
-    } else {
+    }
+    else
+    {
         println "bad";
     }
 }
@@ -87,7 +92,7 @@ main{println "{ ; } // /*"; // inline
 }
 
 test('formatting does not require semantic validity while writing a program', () => {
-    assert.equal(formatCode('main{unknown=5;}'), 'main {\n    unknown = 5;\n}\n');
+    assert.equal(formatCode('main{unknown=5;}'), 'main\n{\n    unknown = 5;\n}\n');
 });
 test('empty and comment-only text are supported', () => {
     assert.equal(formatCode(' \n\t'), '');

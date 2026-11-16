@@ -87,7 +87,7 @@ export function formatCode(source) {
         const trailingComment =
             isComment(token) && previous && token.startLine === previous.endLine && Boolean(line);
 
-        if (pendingBreak && !trailingComment && current !== 'Else' && current !== 'Semicolon') {
+        if (pendingBreak && !trailingComment && current !== 'Semicolon') {
             newline();
         }
         if (betweenProcedures && !trailingComment && current !== 'Semicolon') {
@@ -101,7 +101,8 @@ export function formatCode(source) {
             write(token.image, Boolean(line));
             if (current === 'LineComment') newline();
         } else if (current === 'LBrace') {
-            write('{', Boolean(line));
+            newline();
+            write('{');
             newline();
             indent++;
         } else if (current === 'RBrace') {

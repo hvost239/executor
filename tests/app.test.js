@@ -49,8 +49,8 @@ test('Format button and keyboard shortcut update the editor and line numbers', a
         const editor = f.app.elements.codeEditor;
         editor.value = 'main{println "Привет";}';
         f.app.elements.formatCodeBtn.click();
-        assert.equal(editor.value, 'main {\n    println "Привет";\n}\n');
-        assert.equal(f.app.elements.lineNumbers.children.length, 4);
+        assert.equal(editor.value, 'main\n{\n    println "Привет";\n}\n');
+        assert.equal(f.app.elements.lineNumbers.children.length, 5);
         assert.equal(f.document.activeElement, editor);
         editor.value = 'main{println 1+2;}';
         editor.dispatchEvent(
@@ -63,7 +63,7 @@ test('Format button and keyboard shortcut update the editor and line numbers', a
                 cancelable: true,
             })
         );
-        assert.equal(editor.value, 'main {\n    println 1 + 2;\n}\n');
+        assert.equal(editor.value, 'main\n{\n    println 1 + 2;\n}\n');
         f.app.elements.runBtn.click();
         await settle();
         assert.equal(f.document.querySelector('.program-output').textContent, '3\n');
@@ -89,7 +89,7 @@ test('Format preserves invalid text and cannot modify an active program', async 
         await settle();
         assert.equal(f.app.elements.formatCodeBtn.disabled, false);
         f.app.elements.formatCodeBtn.click();
-        assert.equal(editor.value, 'main {\n    int x;\n    input x;\n}\n');
+        assert.equal(editor.value, 'main\n{\n    int x;\n    input x;\n}\n');
     } finally {
         await f.close();
     }

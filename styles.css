@@ -130,6 +130,7 @@ body {
 
 .nav-controls {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     gap: 12px;
 }
@@ -330,6 +331,7 @@ body {
 }
 
 .editor-panel .panel-header { flex-wrap: wrap; gap: 8px; }
+.editor-panel .panel-actions { flex-wrap: wrap; }
 .btn-format { min-height: 36px; padding: 8px 12px; font-size: 12px; }
 .btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
@@ -664,6 +666,37 @@ body {
     padding: 24px;
     overflow-y: auto;
 }
+
+.task-dialog {
+    margin: auto;
+    width: min(560px, 90vw);
+    max-height: 85vh;
+    padding: 0;
+    overflow-y: auto;
+    background: var(--bg-dark);
+    color: var(--text-primary);
+    border: 1px solid var(--bg-light);
+    border-radius: var(--border-radius-lg);
+    box-shadow: var(--shadow-lg);
+}
+
+.task-dialog::backdrop { background: rgba(0, 0, 0, 0.7); }
+.task-dialog p { margin: 0 0 16px; line-height: 1.5; }
+.task-dialog label { display: block; margin-bottom: 8px; }
+.task-dialog textarea,
+.task-dialog input,
+.task-dialog select {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 16px;
+    resize: vertical;
+    background: var(--bg-medium);
+    color: var(--text-primary);
+    border: 1px solid var(--accent-primary);
+    border-radius: var(--border-radius);
+    font: 13px monospace;
+}
+.task-dialog [role="status"] { margin: 16px 0 0; }
 
 /* ============================================
    Example Cards
